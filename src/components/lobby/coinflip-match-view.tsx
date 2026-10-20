@@ -139,9 +139,10 @@ export function CoinFlipMatchView({
         </div>
       </div>
 
-      <div className="relative mt-3 flex flex-1 items-center justify-between gap-2 px-1 py-8 sm:px-3 sm:py-10">
+      <div className="relative mt-3 flex flex-1 items-center justify-between gap-2 px-1 py-10 sm:px-3 sm:py-12">
         <PlayerColumn player={game.host} side="heads" />
-        <div className="pointer-events-none absolute inset-x-0 top-[42%] z-10 flex -translate-y-1/2 justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
+          {/* Sprite flip only when both seats are filled */}
           <CoinFlipCoin spinning={spinning} />
         </div>
         <PlayerColumn player={game.joiner} side="tails" waiting={!hasJoiner} />

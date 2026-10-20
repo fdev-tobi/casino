@@ -148,7 +148,8 @@ export function CoinFlipLobby() {
               <Avatar player={game.host} size="lg" className="relative z-10 size-14 border-2" />
               <CoinFlipCoin
                 spinning={game.status === "full"}
-                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-12 w-24 -translate-x-1/2 -translate-y-1/2 scale-[0.72]"
+                size="sm"
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
               />
               {game.joiner ? (
                 <Avatar player={game.joiner} size="lg" className="relative z-10 size-14 border-2" />
