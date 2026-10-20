@@ -1,37 +1,78 @@
 # Value system integration
 
-This document describes how a later stage can connect an authorized value source. The current lobby does not call Elvebredd or any other external value service. Match values, pots, and standings come from `src/lib/mock-data.ts`.
+## Current mode: display only
 
-## Current boundary
+Adopt Luck shows guide values in the lobby UI. Those figures are **not** used to settle deposits, withdrawals, buys, sells, or wagers.
 
-- Interface: `src/lib/integrations/value-provider.ts`
-- Selection: `getValueProvider()` returns the in-file mock adapter only
-- Lobby pages do not call the provider yet; they read local mock records so the UI stays independent of any vendor
+| Concern | Status |
+| --- | --- |
+| Show gem amounts next to items / pots | Uses display catalog |
+| Attribute source in the UI | `ValueAttribution` banner |
+| Credit balances on deposit / withdraw | Not connected |
+| Price buys / sells / gambles | Not connected (mock game logic only) |
 
-The provider interface is intentionally small:
+## Code map
 
-- `getItemValuation(externalId)`
+| Piece | Path |
+| --- | --- |
+| Provider interface | `src/lib/integrations/value-provider.ts` |
+| Raw AMVerse export | `src/data/elvebreddvalues.json` |
+| Display snapshot | `src/data/display-values.snapshot.json` (`id`, `name`, `amount`, `rarity`, `imageUrl`) |
+| Refresh script | `scripts/fetch_amverse_values.py` |
+| Read API | `GET /api/display-values` |
+| Client cache | `DisplayValuesProvider` |
+| Browse UI | `/values` (`ValuesPanel`) |
+| UI gem | `ValueGem` (`itemId` prefers catalog amount) |
+| Pet image chip | `ItemChip` (uses catalog `imageUrl`) |
 
-Unavailable figures and upstream errors belong in the result type. The interface does not assume a public Elvebredd API, a response schema, or an authentication scheme.
+Default provider id: `elvebredd-display` (snapshot or optional feed).
 
-`server-only` guards the provider module so a secret-bearing adapter cannot be imported into a client component.
+Set `VALUE_PROVIDER=mock` to force the empty mock adapter.
 
-## What was checked
+## How values are produced
 
-The public Elvebredd homepage describes Adopt Me value lists and a value calculator, and it points support to Discord. That page does not document a public API, authentication method, permitted automated use, or rate limits. No endpoints were guessed from that page, and no protected route was requested.
+1. `scripts/fetch_amverse_values.py` calls AMVerse’s public pets API (challenge token + `X-AMV-Token`).
+2. It keeps **Elvebredd** columns (`rvalue` / `nvalue` / `mvalue`) and applies platform **`MULTIPLIER = 2`**.
+3. Writes:
+   - `src/data/elvebreddvalues.json` — full pet list with `regular` / `neon` / `mega`
+   - `src/data/display-values.snapshot.json` — flat `id` / `name` / `amount` rows (variants get `-neon` / `-mega` suffixes)
 
-## Before a live adapter
+Refresh:
 
-Stop and confirm all of the following with the provider:
+```bash
+.venv/bin/python scripts/fetch_amverse_values.py
+```
 
-1. There is an official or otherwise authorized integration method.
-2. The current documentation, authentication requirements, and rate limits are known.
-3. The client has permission to use that method for this product.
-4. Credentials can be stored as server-side environment variables and are absent from `NEXT_PUBLIC_*` variables and client bundles.
-5. The response fields that map to item identity and value are documented by the provider.
+## Source notes
 
-If that method does not exist, do not scrape the site, do not bypass access controls, and do not invent endpoints. Report the limitation and leave the mock provider in place.
+- [amverse.co/values](https://amverse.co/values) aggregates community guides (Elvebredd + AMVGG). Not official Adopt Me prices.
+- This project does **not** scrape Elvebredd directly.
+- Numbers may lag or include non-pet items; review before treating as canonical.
 
-## Product boundary
+### Optional authorized feed
 
-Even after a value source is connected, Join / Create / Upgrade / Race actions must not imply real deposits, withdrawals, or live wagers until licensing, jurisdiction, and security requirements are approved.
+```bash
+ELVEBREDD_DISPLAY_FEED_URL=https://example.com/authorized-values.json
+```
+
+Expected JSON shape matches `src/data/display-values.snapshot.json`:
+
+```json
+{
+  "providerId": "elvebredd-display-feed",
+  "sourceLabel": "Authorized feed",
+  "sourceUrl": "https://amverse.co/values",
+  "unitLabel": "value",
+  "asOf": "2026-10-20T00:00:00.000Z",
+  "disclaimer": "Display only. …",
+  "items": [{ "id": "pet-shadow-dragon", "name": "Shadow Dragon", "amount": 1690 }]
+}
+```
+
+## Later: settlement
+
+When guide values should **determine** deposit / withdraw / wager economics:
+
+1. Keep display path unchanged.
+2. Add a separate settlement path that snapshots `amount`, `asOf`, and `providerId` on each money-moving action.
+3. Never let the client trust raw display JSON for balances.

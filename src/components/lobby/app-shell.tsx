@@ -7,9 +7,11 @@ import { useState, type ReactNode } from "react";
 import { AuthProvider } from "@/components/lobby/auth-provider";
 import { BottomNav } from "@/components/lobby/bottom-nav";
 import { ChatPanel } from "@/components/lobby/chat-panel";
+import { DisplayValuesProvider } from "@/components/lobby/display-values-provider";
 import { LoginDialog } from "@/components/lobby/login-dialog";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
+import { ValueAttribution } from "@/components/lobby/value-attribution";
 import {
   Sheet,
   SheetContent,
@@ -35,6 +37,9 @@ function ShellInner({ children }: { children: ReactNode }) {
 
         <div className="flex w-full flex-col overflow-auto">
           <StatusBanner />
+          <div className="px-4 pb-1">
+            <ValueAttribution />
+          </div>
           <main id="content" className="flex-1">
             {children}
           </main>
@@ -96,7 +101,9 @@ function ShellInner({ children }: { children: ReactNode }) {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <ShellInner>{children}</ShellInner>
+      <DisplayValuesProvider>
+        <ShellInner>{children}</ShellInner>
+      </DisplayValuesProvider>
     </AuthProvider>
   );
 }

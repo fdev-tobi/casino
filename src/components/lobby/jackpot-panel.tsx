@@ -4,19 +4,21 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
+import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
-import { jackpotRound } from "@/lib/mock-data";
+import { defaultWagerItem, jackpotRound } from "@/lib/mock-data";
 import type { DemoPlayer } from "@/types/lobby";
 
 export function JackpotPanel() {
   const { user, openLogin } = useAuth();
+  const { sumAmounts } = useDisplayValues();
   const [seconds, setSeconds] = useState(jackpotRound.secondsLeft);
   const [joined, setJoined] = useState(false);
   const [entries, setEntries] = useState(() => [...jackpotRound.entries]);
   const progress = Math.max(0, Math.min(1, seconds / jackpotRound.duration));
-  const pot = entries.reduce((sum, entry) => sum + entry.value, 0);
+  const pot = entries.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -37,20 +39,23 @@ export function JackpotPanel() {
       initials: user.username.slice(0, 2).toUpperCase(),
       color: "#5468f1",
     };
-    const value = 150;
+    const value = defaultWagerItem.value;
     setEntries((current) => {
       const next = [
         ...current,
         {
           id: `je-local-${Date.now()}`,
           player,
-          items: [{ id: `ji-${Date.now()}`, name: "Ash Key", value, tone: "slate" as const }],
+          items: [{ ...defaultWagerItem }],
           value,
           chance: 0,
         },
       ];
-      const total = next.reduce((sum, entry) => sum + entry.value, 0);
-      return next.map((entry) => ({ ...entry, chance: (entry.value / total) * 100 }));
+      const total = next.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
+      return next.map((entry) => ({
+        ...entry,
+        chance: (sumAmounts([...entry.items]) / total) * 100,
+      }));
     });
     setJoined(true);
   }
@@ -97,7 +102,7 @@ export function JackpotPanel() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <ValueGem amount={entry.value} />
+                  <ValueGem amount={sumAmounts([...entry.items])} />
                   <p className="text-xs text-primary">{entry.chance.toFixed(1)}%</p>
                 </div>
               </li>

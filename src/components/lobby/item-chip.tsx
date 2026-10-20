@@ -1,3 +1,6 @@
+"use client";
+
+import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { cn } from "@/lib/utils";
 import type { DemoItem } from "@/types/lobby";
 
@@ -10,24 +13,47 @@ const toneClass: Record<DemoItem["tone"], string> = {
   slate: "from-slate-300/90 to-slate-600/80",
 };
 
+type ChipItem = Pick<DemoItem, "name" | "tone"> & {
+  id?: string;
+  imageUrl?: string | null;
+};
+
 export function ItemChip({
   item,
   size = "md",
 }: {
-  item: Pick<DemoItem, "name" | "tone">;
+  item: ChipItem;
   size?: "sm" | "md" | "lg";
 }) {
+  const { getItem } = useDisplayValues();
+  const catalog = item.id ? getItem(item.id) : undefined;
+  const imageUrl = item.imageUrl || catalog?.imageUrl || null;
   const dim = size === "sm" ? "h-10 w-10" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
+
   return (
     <span
       title={item.name}
       className={cn(
         "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-gradient-to-br transition hover:border-primary",
-        toneClass[item.tone],
+        !imageUrl && toneClass[item.tone],
+        imageUrl && "border-white/10 bg-black/40",
         dim,
       )}
     >
-      <span className="size-2.5 rounded-full bg-white/80" />
+      {imageUrl ? (
+        // AMVerse CDN is more reliable without a localhost Referer.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt={item.name}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="size-full object-contain p-1"
+        />
+      ) : (
+        <span className="size-2.5 rounded-full bg-white/80" />
+      )}
     </span>
   );
 }

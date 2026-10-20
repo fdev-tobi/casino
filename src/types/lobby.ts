@@ -1,4 +1,4 @@
-export type GameCatalog = "mm2";
+export type GameCatalog = "adoptme";
 
 export type CoinFlipStatus = "open" | "full" | "ended";
 
@@ -7,6 +7,7 @@ export type DemoItem = {
   name: string;
   value: number;
   tone: "amber" | "violet" | "cyan" | "rose" | "lime" | "slate";
+  imageUrl?: string | null;
 };
 
 export type DemoPlayer = {
@@ -51,6 +52,7 @@ export type UpgraderItem = {
   name: string;
   value: number;
   tone: DemoItem["tone"];
+  imageUrl?: string | null;
 };
 
 export type LiveWin = {

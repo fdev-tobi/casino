@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
+import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ type SortId = "high-low" | "low-high" | "name";
 
 export function UpgraderPanel() {
   const { user, openLogin } = useAuth();
+  const { getAmount, sumAmounts } = useDisplayValues();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortId>("high-low");
   const [selected, setSelected] = useState<UpgraderItem[]>([]);
@@ -28,9 +30,9 @@ export function UpgraderPanel() {
     const list = upgraderItems.filter((item) => item.name.toLowerCase().includes(needle));
     switch (sort) {
       case "high-low":
-        return [...list].sort((a, b) => b.value - a.value);
+        return [...list].sort((a, b) => getAmount(b.id, b.value) - getAmount(a.id, a.value));
       case "low-high":
-        return [...list].sort((a, b) => a.value - b.value);
+        return [...list].sort((a, b) => getAmount(a.id, a.value) - getAmount(b.id, b.value));
       case "name":
         return [...list].sort((a, b) => a.name.localeCompare(b.name));
       default: {
@@ -38,10 +40,10 @@ export function UpgraderPanel() {
         return unreachable;
       }
     }
-  }, [query, sort]);
+  }, [query, sort, getAmount]);
 
-  const selectedTotal = selected.reduce((sum, item) => sum + item.value, 0);
-  const desiredTotal = desired?.value ?? 0;
+  const selectedTotal = sumAmounts(selected);
+  const desiredTotal = desired ? getAmount(desired.id, desired.value) : 0;
   const chance = selectedTotal > 0 && desiredTotal > 0 ? Math.min(99.9, (selectedTotal / desiredTotal) * 100) : 0;
   const multiplier = selectedTotal > 0 && desiredTotal > 0 ? desiredTotal / selectedTotal : 0;
 
@@ -201,7 +203,7 @@ export function UpgraderPanel() {
                   >
                     <ItemChip item={item} />
                     <span className="line-clamp-2 text-xs font-medium">{item.name}</span>
-                    <ValueGem amount={item.value} className="text-xs" />
+                    <ValueGem amount={item.value} itemId={item.id} className="text-xs" />
                   </button>
                 </li>
               );

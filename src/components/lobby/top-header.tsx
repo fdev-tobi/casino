@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins, Gauge, LogIn, LogOut, Trophy, Zap } from "lucide-react";
+import { Coins, Gauge, Gem, LogIn, LogOut, Trophy, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,6 +16,7 @@ const modeIcon: Record<(typeof gameModes)[number]["id"], ComponentType<SVGProps<
   coinflip: Coins,
   jackpot: Gauge,
   upgrader: Zap,
+  values: Gem,
   race: Trophy,
   leaderboard: Trophy,
 };

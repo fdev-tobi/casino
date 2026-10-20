@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
+import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatRange } from "@/lib/format";
-import { coinFlipGames, historyEntries, lobbyStats } from "@/lib/mock-data";
+import { coinFlipGames, defaultWagerItem, historyEntries, lobbyStats } from "@/lib/mock-data";
 import type { CoinFlipGame, DemoPlayer } from "@/types/lobby";
 
 function userAsPlayer(username: string): DemoPlayer {
@@ -36,6 +37,7 @@ function userAsPlayer(username: string): DemoPlayer {
 
 export function CoinFlipLobby() {
   const { user, openLogin } = useAuth();
+  const { sumAmounts } = useDisplayValues();
   const [games, setGames] = useState(() => [...coinFlipGames]);
   const [selected, setSelected] = useState<CoinFlipGame | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -73,15 +75,15 @@ export function CoinFlipLobby() {
     const current = requireUser();
     if (!current) return;
     const host = userAsPlayer(current.username);
-    const value = 120;
+    const value = defaultWagerItem.value;
     const created: CoinFlipGame = {
       id: `cf-local-${Date.now()}`,
       hash: Math.random().toString(16).slice(2).padEnd(32, "0").slice(0, 32),
-      catalog: "mm2",
+      catalog: "adoptme",
       status: "open",
       host,
       joiner: null,
-      items: [{ id: `local-item-${Date.now()}`, name: "Harbor Chips", value, tone: "cyan" }],
+      items: [{ ...defaultWagerItem }],
       value,
       rangeMin: Math.round(value * 0.95),
       rangeMax: Math.round(value * 1.05),
@@ -153,20 +155,33 @@ export function CoinFlipLobby() {
             </div>
 
             <div className="grid grid-cols-1 items-center gap-2 lg:grid-cols-2">
-              <div className="flex w-52 items-center justify-center -space-x-4 overflow-hidden md:justify-start">
-                {game.items.slice(0, 4).map((item) => (
-                  <ItemChip key={item.id} item={item} size="lg" />
-                ))}
-                {game.items.length > 4 ? (
-                  <span className="pl-4 text-xs text-white/50">+{game.items.length - 4}</span>
-                ) : null}
+              <div className="flex w-56 flex-col items-center gap-1 md:items-start">
+                <div className="flex items-center justify-center -space-x-4 overflow-hidden md:justify-start">
+                  {game.items.slice(0, 4).map((item) => (
+                    <ItemChip key={item.id} item={item} size="lg" />
+                  ))}
+                  {game.items.length > 4 ? (
+                    <span className="pl-4 text-xs text-white/50">+{game.items.length - 4}</span>
+                  ) : null}
+                </div>
+                <p className="max-w-52 truncate text-xs text-white/55">
+                  {game.items.map((item) => item.name).join(", ")}
+                </p>
               </div>
               <div className="hidden lg:block" />
             </div>
 
             <div className="flex w-36 flex-col text-center">
-              <ValueGem amount={game.value} className="justify-center text-base font-semibold" />
-              <div className="text-sm opacity-50">{formatRange(game.rangeMin, game.rangeMax)}</div>
+              <ValueGem
+                amount={sumAmounts([...game.items])}
+                className="justify-center text-base font-semibold"
+              />
+              <div className="text-sm opacity-50">
+                {formatRange(
+                  Math.round(sumAmounts([...game.items]) * 0.95),
+                  Math.round(sumAmounts([...game.items]) * 1.05),
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -227,13 +242,20 @@ export function CoinFlipLobby() {
                   <p className="text-lg font-semibold text-primary">
                     {selected.joiner ? "50.00%" : "100.00%"}
                   </p>
-                  <ValueGem amount={selected.value} className="mt-1 justify-center" />
+                  <ValueGem
+                    amount={sumAmounts([...selected.items])}
+                    className="mt-1 justify-center"
+                  />
                 </div>
                 <div className="rounded border bg-card p-3 text-center">
                   <p className="text-lg font-semibold text-white/50">
                     {selected.joiner ? "50.00%" : "0%"}
                   </p>
-                  <ValueGem amount={selected.joiner ? selected.value : 0} muted className="mt-1 justify-center" />
+                  <ValueGem
+                    amount={selected.joiner ? sumAmounts([...selected.items]) : 0}
+                    muted
+                    className="mt-1 justify-center"
+                  />
                 </div>
               </div>
               <ul className="mt-3 grid gap-2">
@@ -241,7 +263,7 @@ export function CoinFlipLobby() {
                   <li key={item.id} className="flex items-center gap-3 rounded border bg-card px-4 py-2">
                     <ItemChip item={item} />
                     <span className="flex-1 text-sm font-medium">{item.name}</span>
-                    <ValueGem amount={item.value} />
+                    <ValueGem amount={item.value} itemId={item.id} />
                   </li>
                 ))}
               </ul>

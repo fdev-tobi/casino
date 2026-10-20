@@ -22,26 +22,41 @@ const players: readonly DemoPlayer[] = [
   { id: "p8", name: "SecondLight", initials: "SL", color: "#a78bfa" },
 ];
 
-function item(id: string, name: string, value: number, tone: DemoItem["tone"]): DemoItem {
-  return { id, name, value, tone };
+const IMG = "https://data.amverse.co/images/pets";
+
+function item(
+  id: string,
+  name: string,
+  value: number,
+  tone: DemoItem["tone"],
+  imageFile: string,
+): DemoItem {
+  return {
+    id,
+    name,
+    value,
+    tone,
+    imageUrl: `${IMG}/${encodeURIComponent(imageFile)}`,
+  };
 }
 
+/** Demo inventory ids match `display-values.snapshot.json` (AMVerse ×2). */
 const catalogItems: readonly DemoItem[] = [
-  item("i1", "Harvester", 250, "lime"),
-  item("i2", "Ember Scythe", 900, "amber"),
-  item("i3", "Night Circuit Blade", 350, "violet"),
-  item("i4", "Harbor Chips", 98, "cyan"),
-  item("i5", "Quiet Mantle", 160, "slate"),
-  item("i6", "Vale Compass", 540, "cyan"),
-  item("i7", "Ash Key", 27, "slate"),
-  item("i8", "Tide Seal", 23, "cyan"),
-  item("i9", "Amber Quill", 16, "amber"),
-  item("i10", "Long Room Pennant", 13, "rose"),
-  item("i11", "Circuit Ledger", 12, "violet"),
-  item("i12", "Pool Notes", 6, "cyan"),
-  item("i13", "Second-Seat Ring", 3, "rose"),
-  item("i14", "Ember Bow", 1800, "amber"),
-  item("i15", "Northglass Lantern", 240, "cyan"),
+  item("pet-bat-dragon", "Bat Dragon", 2030, "amber", "Bat Dragon.png"),
+  item("pet-shadow-dragon", "Shadow Dragon", 1690, "amber", "Shadow Dragon.png"),
+  item("pet-giraffe", "Giraffe", 948, "lime", "Giraffe.png"),
+  item("pet-frost-dragon", "Frost Dragon", 654, "cyan", "Frost Dragon.png"),
+  item("pet-owl", "Owl", 493, "violet", "Owl.png"),
+  item("pet-parrot", "Parrot", 395, "rose", "Parrot.png"),
+  item("pet-crow", "Crow", 356, "slate", "Crow.png"),
+  item("pet-evil-unicorn", "Evil Unicorn", 232, "violet", "Evil Unicorn.png"),
+  item("pet-dalmatian", "Dalmatian", 129, "rose", "Dalmatian.png"),
+  item("pet-arctic-reindeer", "Arctic Reindeer", 107, "cyan", "Arctic Reindeer.png"),
+  item("pet-turtle", "Turtle", 50, "lime", "Turtle.png"),
+  item("pet-kangaroo", "Kangaroo", 37.5, "slate", "Kangaroo.png"),
+  item("pet-shadow-dragon-neon", "Neon Shadow Dragon", 4041, "amber", "Shadow Dragon.png"),
+  item("pet-frost-dragon-neon", "Neon Frost Dragon", 1260, "cyan", "Frost Dragon.png"),
+  item("pet-bat-dragon-mega", "Mega Bat Dragon", 14921, "amber", "Bat Dragon.png"),
 ];
 
 function rangeAround(value: number): { min: number; max: number } {
@@ -49,9 +64,13 @@ function rangeAround(value: number): { min: number; max: number } {
   return { min: value - spread, max: value + spread };
 }
 
+function gameValue(items: readonly DemoItem[]): number {
+  return items.reduce((sum, entry) => sum + entry.value, 0);
+}
+
 export const lobbyStats = {
   totalItems: catalogItems.length * 5 + 4,
-  totalValue: 29620,
+  totalValue: Math.round(catalogItems.reduce((sum, entry) => sum + entry.value, 0) * 1.15),
   activeGames: 10,
 } as const;
 
@@ -59,14 +78,14 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
   {
     id: "cf-01",
     hash: "a7c91e2b0f4d88e1c3b9a012ff65d441",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[0],
     joiner: null,
     items: [catalogItems[1]],
-    value: 900,
+    value: catalogItems[1].value,
     ...(() => {
-      const r = rangeAround(900);
+      const r = rangeAround(catalogItems[1].value);
       return { rangeMin: r.min, rangeMax: r.max };
     })(),
     createdAt: "2026-10-20T10:01:00.000Z",
@@ -74,181 +93,204 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
   {
     id: "cf-02",
     hash: "b2d40aa19c77ef0012a88bcd9911ee20",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[1],
     joiner: null,
     items: [catalogItems[2]],
-    value: 350,
-    rangeMin: 332,
-    rangeMax: 368,
+    value: catalogItems[2].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[2].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:02:00.000Z",
   },
   {
     id: "cf-03",
     hash: "c9910022ab33cd44ee55ff6677889900",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[2],
     joiner: null,
-    items: [catalogItems[3], catalogItems[11]],
-    value: 98,
-    rangeMin: 93,
-    rangeMax: 103,
+    items: [catalogItems[9], catalogItems[10]],
+    value: gameValue([catalogItems[9], catalogItems[10]]),
+    ...(() => {
+      const v = gameValue([catalogItems[9], catalogItems[10]]);
+      const r = rangeAround(v);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:03:00.000Z",
   },
   {
     id: "cf-04",
     hash: "f7390a0bfff025a1beadd328d5b67d1c",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "full",
     host: players[6],
     joiner: players[3],
     items: [catalogItems[0]],
-    value: 250,
-    rangeMin: 238,
-    rangeMax: 262,
+    value: catalogItems[0].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[0].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T09:55:00.000Z",
   },
   {
     id: "cf-05",
     hash: "d1e2f3a4b5c697887766554433221100",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[4],
     joiner: null,
     items: [catalogItems[4]],
-    value: 160,
-    rangeMin: 152,
-    rangeMax: 168,
+    value: catalogItems[4].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[4].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:04:00.000Z",
   },
   {
     id: "cf-06",
     hash: "11223344556677889900aabbccddeeff",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[5],
     joiner: null,
-    items: [catalogItems[6]],
-    value: 27,
-    rangeMin: 25,
-    rangeMax: 29,
+    items: [catalogItems[7]],
+    value: catalogItems[7].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[7].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:05:00.000Z",
   },
   {
     id: "cf-07",
     hash: "99887766554433221100ffeeddccbbaa",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[7],
     joiner: null,
-    items: [catalogItems[7]],
-    value: 23,
-    rangeMin: 21,
-    rangeMax: 25,
+    items: [catalogItems[8]],
+    value: catalogItems[8].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[8].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:06:00.000Z",
   },
   {
     id: "cf-08",
     hash: "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[0],
     joiner: null,
-    items: [catalogItems[8]],
-    value: 16,
-    rangeMin: 15,
-    rangeMax: 17,
+    items: [catalogItems[11]],
+    value: catalogItems[11].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[11].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:07:00.000Z",
   },
   {
     id: "cf-09",
     hash: "abcdef0123456789fedcba9876543210",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "open",
     host: players[1],
     joiner: null,
-    items: [catalogItems[9]],
-    value: 13,
-    rangeMin: 12,
-    rangeMax: 14,
+    items: [catalogItems[6]],
+    value: catalogItems[6].value,
+    ...(() => {
+      const r = rangeAround(catalogItems[6].value);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T10:08:00.000Z",
   },
   {
     id: "cf-10",
     hash: "55aa66bb77cc88dd99ee00ff11223344",
-    catalog: "mm2",
+    catalog: "adoptme",
     status: "ended",
     host: players[2],
     joiner: players[4],
-    items: [catalogItems[13], catalogItems[5]],
-    value: 2340,
-    rangeMin: 2223,
-    rangeMax: 2457,
+    items: [catalogItems[12], catalogItems[5]],
+    value: gameValue([catalogItems[12], catalogItems[5]]),
+    ...(() => {
+      const v = gameValue([catalogItems[12], catalogItems[5]]);
+      const r = rangeAround(v);
+      return { rangeMin: r.min, rangeMax: r.max };
+    })(),
     createdAt: "2026-10-20T09:40:00.000Z",
   },
 ];
 
+const jackpotEntries = [
+  {
+    id: "jp-1",
+    player: players[0],
+    items: [catalogItems[1]],
+    value: catalogItems[1].value,
+  },
+  {
+    id: "jp-2",
+    player: players[5],
+    items: [catalogItems[3]],
+    value: catalogItems[3].value,
+  },
+  {
+    id: "jp-3",
+    player: players[3],
+    items: [catalogItems[4]],
+    value: catalogItems[4].value,
+  },
+  {
+    id: "jp-4",
+    player: players[7],
+    items: [catalogItems[7]],
+    value: catalogItems[7].value,
+  },
+] as const;
+
+const jackpotPot = jackpotEntries.reduce((sum, entry) => sum + entry.value, 0);
+
 export const jackpotRound: JackpotRound = {
-  catalog: "mm2",
-  pot: 1840,
+  catalog: "adoptme",
+  pot: jackpotPot,
   secondsLeft: 87,
   duration: 120,
-  entries: [
-    {
-      id: "jp-1",
-      player: players[0],
-      items: [catalogItems[1]],
-      value: 900,
-      chance: 48.9,
-    },
-    {
-      id: "jp-2",
-      player: players[5],
-      items: [catalogItems[5]],
-      value: 540,
-      chance: 29.3,
-    },
-    {
-      id: "jp-3",
-      player: players[3],
-      items: [catalogItems[0]],
-      value: 250,
-      chance: 13.6,
-    },
-    {
-      id: "jp-4",
-      player: players[7],
-      items: [catalogItems[4]],
-      value: 150,
-      chance: 8.2,
-    },
-  ],
+  entries: jackpotEntries.map((entry) => ({
+    ...entry,
+    chance: (entry.value / jackpotPot) * 100,
+  })),
 };
 
 export const upgraderItems: readonly UpgraderItem[] = [
-  { id: "u1", name: "Ember Scythe", value: 4000, tone: "amber" },
-  { id: "u2", name: "Ember Bow", value: 3000, tone: "amber" },
-  { id: "u3", name: "Night Circuit Blade", value: 1800, tone: "violet" },
-  { id: "u4", name: "Vale Compass", value: 540, tone: "cyan" },
-  { id: "u5", name: "Harvester", value: 250, tone: "lime" },
-  { id: "u6", name: "Northglass Lantern", value: 240, tone: "cyan" },
-  { id: "u7", name: "Quiet Mantle", value: 160, tone: "slate" },
-  { id: "u8", name: "Ash Key", value: 150, tone: "slate" },
-  { id: "u9", name: "Tide Seal", value: 120, tone: "cyan" },
-  { id: "u10", name: "Circuit Ledger", value: 55, tone: "violet" },
-  { id: "u11", name: "Long Room Pennant", value: 35, tone: "rose" },
-  { id: "u12", name: "Pool Notes", value: 28, tone: "cyan" },
+  { ...catalogItems[14] },
+  item("pet-shadow-dragon-mega", "Mega Shadow Dragon", 10640, "amber", "Shadow Dragon.png"),
+  item("pet-giraffe-mega", "Mega Giraffe", 9248, "lime", "Giraffe.png"),
+  { ...catalogItems[12] },
+  { ...catalogItems[0] },
+  { ...catalogItems[1] },
+  { ...catalogItems[13] },
+  { ...catalogItems[2] },
+  { ...catalogItems[3] },
+  { ...catalogItems[4] },
+  { ...catalogItems[5] },
+  { ...catalogItems[6] },
 ];
 
 export const liveWins: readonly LiveWin[] = [
-  { id: "lw1", player: "NovaSeat", from: 14, gain: 4, to: 18, multiplier: 1.29, fromTone: "cyan", toTone: "lime" },
-  { id: "lw2", player: "TideMark", from: 17, gain: 3, to: 20, multiplier: 1.18, fromTone: "violet", toTone: "amber" },
-  { id: "lw3", player: "AshRail", from: 900, gain: 175, to: 1075, multiplier: 1.19, fromTone: "amber", toTone: "amber" },
-  { id: "lw4", player: "QuietAnte", from: 10, gain: 7, to: 17, multiplier: 1.7, fromTone: "slate", toTone: "cyan" },
-  { id: "lw5", player: "CircuitLynx", from: 8, gain: 2, to: 10, multiplier: 1.25, fromTone: "rose", toTone: "violet" },
-  { id: "lw6", player: "HarborWick", from: 136, gain: 58, to: 194, multiplier: 1.43, fromTone: "cyan", toTone: "lime" },
+  { id: "lw1", player: "NovaSeat", from: 50, gain: 57, to: 107, multiplier: 2.14, fromTone: "lime", toTone: "cyan" },
+  { id: "lw2", player: "TideMark", from: 232, gain: 124, to: 356, multiplier: 1.53, fromTone: "violet", toTone: "slate" },
+  { id: "lw3", player: "AshRail", from: 1690, gain: 340, to: 2030, multiplier: 1.2, fromTone: "amber", toTone: "amber" },
+  { id: "lw4", player: "QuietAnte", from: 37.5, gain: 12.5, to: 50, multiplier: 1.33, fromTone: "slate", toTone: "lime" },
+  { id: "lw5", player: "CircuitLynx", from: 395, gain: 98, to: 493, multiplier: 1.25, fromTone: "rose", toTone: "violet" },
+  { id: "lw6", player: "HarborWick", from: 654, gain: 294, to: 948, multiplier: 1.45, fromTone: "cyan", toTone: "lime" },
 ];
 
 export const raceBoard: RaceBoard = {
@@ -289,8 +331,8 @@ export const historyEntries: readonly HistoryEntry[] = [
   {
     id: "h1",
     mode: "coinflip",
-    summary: "Viewed Harvester match",
-    value: 250,
+    summary: "Viewed Shadow Dragon match",
+    value: 1690,
     at: "11:40",
     outcome: "viewed",
   },
@@ -298,15 +340,15 @@ export const historyEntries: readonly HistoryEntry[] = [
     id: "h2",
     mode: "jackpot",
     summary: "Joined demo pot",
-    value: 540,
+    value: 654,
     at: "11:22",
     outcome: "lost",
   },
   {
     id: "h3",
     mode: "upgrader",
-    summary: "Previewed Ember Bow upgrade",
-    value: 3000,
+    summary: "Previewed Mega Bat Dragon upgrade",
+    value: 14921,
     at: "10:58",
     outcome: "viewed",
   },
@@ -319,6 +361,9 @@ export const historyEntries: readonly HistoryEntry[] = [
     outcome: "viewed",
   },
 ];
+
+/** Default pet used when creating a local demo wager. */
+export const defaultWagerItem: DemoItem = catalogItems[10];
 
 export function getCoinFlipById(id: string): CoinFlipGame | undefined {
   return coinFlipGames.find((game) => game.id === id);
