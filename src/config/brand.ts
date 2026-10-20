@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
 /**
- * Adopt Luck = chroma.gg layout fork.
- * Same surfaces/radii/structure; primary is Adopt Luck blue instead of mint.
+ * AdoptLuck = chroma.gg layout fork.
+ * Same surfaces/radii/structure; primary is AdoptLuck blue instead of mint.
  */
 export type BrandConfig = {
   name: string;
@@ -53,20 +53,20 @@ export type BrandConfig = {
 };
 
 export const brand: BrandConfig = {
-  name: "Adopt Luck",
+  name: "AdoptLuck",
   tagline: "Demo lobby for CoinFlip, JackPot, Upgrader, Race, and Leaderboard.",
   description:
-    "Adopt Luck — CoinFlip, JackPot, Upgrader, Race, and Leaderboard for in-game items.",
+    "AdoptLuck — CoinFlip, JackPot, Upgrader, Race, and Leaderboard for in-game items.",
   logo: {
     src: "/brand/wordmark-transparent.png",
-    alt: "Adopt Luck",
+    alt: "AdoptLuck",
     width: 168,
     height: 29,
     showWordmark: false,
   },
   mark: {
     src: "/brand/mark-transparent.png",
-    alt: "Adopt Luck crossed swords",
+    alt: "AdoptLuck crossed swords",
     width: 30,
     height: 30,
   },
@@ -76,7 +76,7 @@ export const brand: BrandConfig = {
     size: "cover",
   },
   theme: {
-    // chroma.gg surface hex equivalents; primary swapped to Adopt Luck blue
+    // chroma.gg surface hex equivalents; primary swapped to AdoptLuck blue
     background: "#191b24",
     foreground: "#ffffff",
     card: "#1e2029",

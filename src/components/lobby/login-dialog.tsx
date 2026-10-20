@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, Copy } from "lucide-react";
+import { AlertTriangle, Check, Copy, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -17,61 +17,37 @@ import { Input } from "@/components/ui/input";
 import { brand } from "@/config/brand";
 import { cn } from "@/lib/utils";
 
-const PHRASE_WORDS = [
-  "AIR",
-  "ADMINISTRATION",
-  "EVENING",
-  "BOX",
-  "THAT",
-  "PREMIUM",
-  "RIVER",
-  "SILVER",
-  "ORBIT",
-  "LANTERN",
-  "CIRCUIT",
-  "HAVEN",
-  "MIRROR",
-  "SIGNAL",
-  "QUARTZ",
-  "EMBER",
-] as const;
-
-function buildPhrase() {
-  const picks: string[] = [];
-  for (let i = 0; i < 6; i += 1) {
-    picks.push(PHRASE_WORDS[Math.floor(Math.random() * PHRASE_WORDS.length)]);
-  }
-  return picks.join(" ");
-}
+type Step = "username" | "verify";
 
 export function LoginDialog() {
   const { loginOpen, setLoginOpen, login } = useAuth();
+  const [step, setStep] = useState<Step>("username");
   const [username, setUsername] = useState("");
+  const [resolvedUsername, setResolvedUsername] = useState("");
   const [agreed, setAgreed] = useState(true);
   const [copied, setCopied] = useState(false);
   const [phrase, setPhrase] = useState("");
-
-  const trimmedUsername = username.trim();
-  const hasUsername = trimmedUsername.length >= 2;
-  const showPhrase = trimmedUsername.length > 0;
+  const [challengeId, setChallengeId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loginOpen) {
+      setStep("username");
       setUsername("");
+      setResolvedUsername("");
       setAgreed(true);
       setCopied(false);
       setPhrase("");
+      setChallengeId("");
+      setBusy(false);
+      setError(null);
     }
   }, [loginOpen]);
 
-  useEffect(() => {
-    if (!loginOpen || !showPhrase) return;
-    if (!phrase) {
-      setPhrase(buildPhrase());
-    }
-  }, [loginOpen, showPhrase, phrase]);
-
-  const canSubmit = hasUsername && agreed && Boolean(phrase);
+  const trimmedUsername = username.trim();
+  const canRequestCode = trimmedUsername.length >= 3 && agreed && !busy;
+  const canVerify = Boolean(challengeId && phrase) && agreed && !busy;
 
   async function copyPhrase() {
     if (!phrase) return;
@@ -84,16 +60,77 @@ export function LoginDialog() {
     }
   }
 
+  async function requestCode() {
+    if (!canRequestCode) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/auth/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: trimmedUsername }),
+      });
+      const json = (await response.json()) as {
+        ok: boolean;
+        error?: string;
+        challengeId?: string;
+        phrase?: string;
+        username?: string;
+      };
+      if (!response.ok || !json.ok || !json.challengeId || !json.phrase) {
+        setError(json.error || "Could not create a verification code.");
+        return;
+      }
+      setChallengeId(json.challengeId);
+      setPhrase(json.phrase);
+      setResolvedUsername(json.username || trimmedUsername);
+      setStep("verify");
+    } catch {
+      setError("Could not create a verification code. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyAndLogin() {
+    if (!canVerify) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId }),
+      });
+      const json = (await response.json()) as {
+        ok: boolean;
+        error?: string;
+        code?: string;
+        username?: string;
+      };
+      if (!response.ok || !json.ok || !json.username) {
+        setError(
+          json.error ||
+            "We could not find your verification code in your Roblox profile. Add it to your About section and try again.",
+        );
+        return;
+      }
+      login(json.username);
+    } catch {
+      setError("Verification failed. Try again in a moment.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
       <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold sm:text-2xl">
-            Welcome to {brand.name.toLowerCase()}
-          </DialogTitle>
+          <DialogTitle className="text-xl font-bold sm:text-2xl">Welcome to {brand.name}</DialogTitle>
           <DialogDescription className="text-sm leading-6 text-white/60">
-            By logging in, you acknowledge that you are at least 18 years of age, that any items you
-            wager are not stolen, and that you agree to our Terms of Use.
+            Sign in with your Roblox username. You must place a one-time code in your Roblox About
+            section before login is allowed.
           </DialogDescription>
         </DialogHeader>
 
@@ -101,50 +138,67 @@ export function LoginDialog() {
           className="mt-2 grid gap-4"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!canSubmit) return;
-            login(username);
+            if (step === "username") {
+              void requestCode();
+              return;
+            }
+            void verifyAndLogin();
           }}
         >
           <label className="grid gap-2">
-            <span className="sr-only">Username</span>
+            <span className="text-sm font-medium text-white/70">Roblox username</span>
             <Input
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="Enter your username..."
-              aria-label="Username"
+              onChange={(event) => {
+                setUsername(event.target.value);
+                if (step === "verify") {
+                  setStep("username");
+                  setChallengeId("");
+                  setPhrase("");
+                  setError(null);
+                }
+              }}
+              placeholder="Enter your Roblox username..."
+              aria-label="Roblox username"
               autoComplete="username"
               autoFocus
+              disabled={busy}
               className="h-11 rounded-lg border-transparent bg-input font-medium"
             />
           </label>
 
-          {showPhrase ? (
+          {step === "verify" ? (
             <div className="grid gap-2">
               <p className="text-sm text-foreground">
-                Please add the following phrase to your profile&apos;s bio/about me page:
+                Add this code to <span className="font-semibold">{resolvedUsername}</span>
+                &apos;s Roblox About / bio, save the profile, then verify:
               </p>
               <div className="flex items-start gap-2 rounded-lg bg-input px-3 py-3">
                 <code className="min-w-0 flex-1 break-words text-sm font-semibold tracking-wide uppercase text-white/90">
-                  {phrase || "Generating…"}
+                  {phrase}
                 </code>
                 <button
                   type="button"
                   onClick={copyPhrase}
-                  disabled={!phrase}
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-primary transition hover:bg-primary/10 disabled:opacity-40"
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-primary transition hover:bg-primary/10"
                   aria-label={copied ? "Copied" : "Copy phrase"}
                 >
                   {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
                 </button>
               </div>
-              <div className="flex items-start gap-3 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-3 text-sm text-red-200">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-300" aria-hidden="true" />
-                <p>We recommend removing this from your profile after you log in</p>
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/50 bg-amber-950/40 px-3 py-3 text-sm text-amber-100">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
+                <p>Remove the code from your profile after you finish logging in.</p>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-white/45">Enter a username to receive your verification phrase.</p>
-          )}
+          ) : null}
+
+          {error ? (
+            <div className="flex items-start gap-3 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-3 text-sm text-red-200">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-300" aria-hidden="true" />
+              <p>{error}</p>
+            </div>
+          ) : null}
 
           <label className="flex cursor-pointer items-start gap-3 text-sm">
             <span
@@ -173,9 +227,18 @@ export function LoginDialog() {
             type="submit"
             size="lg"
             className="h-12 w-full rounded-full text-base font-bold"
-            disabled={!canSubmit}
+            disabled={step === "username" ? !canRequestCode : !canVerify}
           >
-            Login
+            {busy ? (
+              <span className="inline-flex items-center gap-2">
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                {step === "username" ? "Checking username…" : "Verifying profile…"}
+              </span>
+            ) : step === "username" ? (
+              "Login"
+            ) : (
+              "Verify & login"
+            )}
           </Button>
         </form>
       </DialogContent>
