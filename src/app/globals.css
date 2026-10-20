@@ -32,7 +32,6 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
-  --animate-coinflip: coinflip 0.9s steps(68) infinite;
 }
 
 @layer utilities {
@@ -70,8 +69,9 @@ h3 {
   outline-offset: 2px;
 }
 
-/* CoinFlip sprite strip: 69 frames × 400px → last offset -27200px */
-@keyframes coinflip {
+/* CoinFlip sprite strip: 69 frames × 400px → last offset -27200px
+   Animation props are set inline on the sprite so utilities cannot override loop/speed. */
+@keyframes cf-coin-flip-sheet {
   from {
     background-position: 0 0;
   }
@@ -80,28 +80,8 @@ h3 {
   }
 }
 
-.cf-coin-sprite {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 10;
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  translate: -50% -50%;
-  scale: var(--cf-coin-scale, 0.24);
-}
-
-.animate-coinflip {
-  animation: coinflip 0.9s steps(68) infinite;
-  will-change: background-position;
-}
-
-.cf-coin-static {
-  background-position: 0 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .animate-coinflip {
+  [data-coin-sprite] {
     animation: none !important;
     background-position: -27200px 0 !important;
   }

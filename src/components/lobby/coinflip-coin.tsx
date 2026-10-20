@@ -3,6 +3,9 @@
 import { cn } from "@/lib/utils";
 
 const FRAME_PX = 400;
+/** Full sprite walk once — slower than chroma default (~0.9s). */
+const FLIP_DURATION_MS = 1800;
+const FLIP_STEPS = 68;
 
 const sizeClass = {
   sm: "h-14 w-14 [--cf-coin-scale:0.16]",
@@ -12,10 +15,7 @@ const sizeClass = {
 
 /**
  * Sprite-sheet coin between match seats (`/sprites/tails.png`, 69×400px frames).
- * Plays `animate-coinflip` when both seats are filled.
- *
- * Markup mirrors chroma:
- * `<span class="relative h-24…"><div class="… animate-coinflip" style="background:url(/sprites/tails.png);width:400px;height:400px" /></span>`
+ * Plays the strip once when mounted with spinning (match modal only).
  */
 export function CoinFlipCoin({
   spinning = false,
@@ -30,7 +30,7 @@ export function CoinFlipCoin({
     <span className={cn("relative block", sizeClass[size], className)} aria-hidden="true">
       <div
         data-coin-sprite
-        className={cn("pointer-events-none", spinning ? "animate-coinflip" : "cf-coin-static")}
+        className="pointer-events-none"
         style={{
           position: "absolute",
           top: "50%",
@@ -40,8 +40,17 @@ export function CoinFlipCoin({
           height: FRAME_PX,
           backgroundImage: 'url("/sprites/tails.png")',
           backgroundRepeat: "no-repeat",
-          backgroundPosition: spinning ? undefined : "0 0",
+          backgroundPosition: spinning ? "0 0" : "0 0",
           transform: "translate(-50%, -50%) scale(var(--cf-coin-scale, 0.24))",
+          ...(spinning
+            ? {
+                animationName: "cf-coin-flip-sheet",
+                animationDuration: `${FLIP_DURATION_MS}ms`,
+                animationTimingFunction: `steps(${FLIP_STEPS}, end)`,
+                animationIterationCount: 1,
+                animationFillMode: "forwards",
+              }
+            : {}),
         }}
       />
     </span>

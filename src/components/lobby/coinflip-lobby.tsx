@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
-import { CoinFlipCoin } from "@/components/lobby/coinflip-coin";
 import { CoinFlipMatchView } from "@/components/lobby/coinflip-match-view";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
@@ -42,9 +41,15 @@ export function CoinFlipLobby() {
   const { sumAmounts } = useDisplayValues();
   const [games, setGames] = useState(() => [...coinFlipGames]);
   const [selected, setSelected] = useState<CoinFlipGame | null>(null);
+  const [matchViewKey, setMatchViewKey] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinedToast, setJoinedToast] = useState<string | null>(null);
+
+  function openMatch(game: CoinFlipGame) {
+    setSelected(game);
+    setMatchViewKey((key) => key + 1);
+  }
   const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
 
   function requireUser() {
@@ -144,17 +149,13 @@ export function CoinFlipLobby() {
             key={game.id}
             className="flex flex-col items-center justify-between gap-4 rounded border bg-card px-4 py-4 md:flex-row md:py-2"
           >
-            <div className="relative flex min-w-[12rem] items-center justify-between gap-3 sm:min-w-[14rem]">
-              <Avatar player={game.host} size="lg" className="relative z-10 size-14 border-2" />
-              <CoinFlipCoin
-                spinning={game.status === "full"}
-                size="sm"
-                className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
-              />
+            <div className="flex items-center gap-4">
+              <Avatar player={game.host} size="lg" className="size-14 border-2" />
+              <span className="mt-2 text-sm font-semibold opacity-50 md:hidden">VS</span>
               {game.joiner ? (
-                <Avatar player={game.joiner} size="lg" className="relative z-10 size-14 border-2" />
+                <Avatar player={game.joiner} size="lg" className="size-14 border-2" />
               ) : (
-                <span className="relative z-10 inline-flex size-14 items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
+                <span className="inline-flex size-14 items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
                   ?
                 </span>
               )}
@@ -196,7 +197,7 @@ export function CoinFlipLobby() {
                   Join
                 </Button>
               ) : null}
-              <Button type="button" size="sm" variant="secondary" onClick={() => setSelected(game)}>
+              <Button type="button" size="sm" variant="secondary" onClick={() => openMatch(game)}>
                 View
               </Button>
             </div>
@@ -207,7 +208,11 @@ export function CoinFlipLobby() {
       <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent fullscreen className="border-[#22242f] bg-[#121218] sm:max-w-lg">
           {selected ? (
-            <CoinFlipMatchView game={selected} onJoin={() => joinGame(selected)} />
+            <CoinFlipMatchView
+              key={`${selected.id}-${matchViewKey}`}
+              game={selected}
+              onJoin={() => joinGame(selected)}
+            />
           ) : null}
         </DialogContent>
       </Dialog>
