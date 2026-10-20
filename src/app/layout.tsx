@@ -8,11 +8,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: `${brand.name} | Demo lobby`,
+    default: `${brand.name} | The LEADING in-game item game site!`,
     template: `%s · ${brand.name}`,
   },
   description: brand.description,
-  icons: { icon: brand.mark.src },
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }, { url: brand.mark.src, type: "image/png" }],
+    apple: brand.mark.src,
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

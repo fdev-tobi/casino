@@ -4,20 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { AuthProvider } from "@/components/lobby/auth-provider";
 import { BottomNav } from "@/components/lobby/bottom-nav";
 import { ChatPanel } from "@/components/lobby/chat-panel";
-import { DemoNotice } from "@/components/lobby/demo-notice";
+import { LoginDialog } from "@/components/lobby/login-dialog";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -29,22 +21,17 @@ import { brand } from "@/config/brand";
 import { footerLegal, gameModes } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
-export function AppShell({ children }: { children: ReactNode }) {
+function ShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [gamesOpen, setGamesOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [noticeOpen, setNoticeOpen] = useState(false);
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopHeader onLogin={() => setLoginOpen(true)} />
+      <TopHeader />
 
       <div className="mt-20 flex flex-1 overflow-auto">
-        <ChatPanel
-          className="hidden w-1/4 min-w-[22rem] flex-col gap-2 bg-chat px-3 pt-3 xl:flex"
-          onSendAttempt={() => setNoticeOpen(true)}
-        />
+        <ChatPanel className="hidden w-1/4 min-w-[22rem] flex-col gap-2 bg-chat px-3 pt-3 xl:flex" />
 
         <div className="flex w-full flex-col overflow-auto">
           <StatusBanner />
@@ -52,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </main>
           <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 p-3 text-sm text-white/40">
-            <span>{brand.name} is a demonstration prototype. Not affiliated with ROBLOX corporation.</span>
+            <span>{brand.name} is not affiliated with ROBLOX corporation.</span>
             {footerLegal.map((item) => (
               <Link key={item.href} href={item.href} className="hover:text-white/70">
                 {item.label}
@@ -68,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Games</SheetTitle>
-            <SheetDescription>Choose a demonstration mode.</SheetDescription>
+            <SheetDescription>Choose a game mode.</SheetDescription>
           </SheetHeader>
           <nav className="mt-4 grid gap-1" aria-label="Mobile game modes">
             {gameModes.map((mode) => {
@@ -95,43 +82,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SheetContent className="bg-chat p-3">
           <SheetHeader className="sr-only">
             <SheetTitle>Chat</SheetTitle>
-            <SheetDescription>Mock lobby chat.</SheetDescription>
+            <SheetDescription>Lobby chat.</SheetDescription>
           </SheetHeader>
-          <ChatPanel className="flex h-full flex-col gap-2" onSendAttempt={() => setNoticeOpen(true)} />
+          <ChatPanel className="flex h-full flex-col gap-2" />
         </SheetContent>
       </Sheet>
 
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Login</DialogTitle>
-            <DialogDescription>
-              Authentication is not connected. This panel is a layout placeholder for the prototype.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <Input placeholder="Username" aria-label="Username" disabled />
-            <Input placeholder="Password" type="password" aria-label="Password" disabled />
-            <Button
-              type="button"
-              size="lg"
-              onClick={() => {
-                setLoginOpen(false);
-                setNoticeOpen(true);
-              }}
-            >
-              Continue as guest preview
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <DemoNotice
-        open={noticeOpen}
-        onOpenChange={setNoticeOpen}
-        title="Demo only"
-        description="Chat and login are presentation controls. No account is created and no message is sent."
-      />
+      <LoginDialog />
     </div>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <ShellInner>{children}</ShellInner>
+    </AuthProvider>
   );
 }

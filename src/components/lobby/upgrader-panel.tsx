@@ -1,12 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { DemoNotice } from "@/components/lobby/demo-notice";
+import { useAuth } from "@/components/lobby/auth-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { brand } from "@/config/brand";
 import { liveWins, upgraderItems } from "@/lib/mock-data";
 import type { UpgraderItem } from "@/types/lobby";
 import { cn } from "@/lib/utils";
@@ -14,12 +16,12 @@ import { cn } from "@/lib/utils";
 type SortId = "high-low" | "low-high" | "name";
 
 export function UpgraderPanel() {
+  const { user, openLogin } = useAuth();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortId>("high-low");
   const [selected, setSelected] = useState<UpgraderItem[]>([]);
   const [desired, setDesired] = useState<UpgraderItem | null>(null);
-  const [noticeOpen, setNoticeOpen] = useState(false);
-  const [loginNotice, setLoginNotice] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -49,6 +51,22 @@ export function UpgraderPanel() {
         ? current.filter((entry) => entry.id !== item.id)
         : [...current, item],
     );
+  }
+
+  function upgrade() {
+    if (!user) {
+      openLogin();
+      return;
+    }
+    if (!desired || selected.length === 0) {
+      setResult("Select items and a target first.");
+      return;
+    }
+    const won = Math.random() * 100 < chance;
+    setResult(won ? `Won ${desired.name}!` : "Upgrade missed — try again.");
+    if (won) {
+      setSelected([]);
+    }
   }
 
   return (
@@ -105,16 +123,33 @@ export function UpgraderPanel() {
               <ValueGem amount={desiredTotal} className="mt-1 justify-center" />
             </div>
           </div>
-          <Button type="button" className="mt-4 w-full" onClick={() => setNoticeOpen(true)}>
+          <Button type="button" className="mt-4 w-full" onClick={upgrade}>
             Upgrade
           </Button>
-          <div className="mt-3 w-full rounded-[4px] border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground">
-            Not logged in
-            <p className="mt-1 text-xs">You must be logged in to play upgrader</p>
-            <Button type="button" variant="secondary" size="sm" className="mt-2" onClick={() => setLoginNotice(true)}>
-              Login
-            </Button>
-          </div>
+          {result ? (
+            <p className="mt-2 text-center text-sm font-semibold text-primary">{result}</p>
+          ) : null}
+          {user ? (
+            <div className="mt-3 flex w-full items-center justify-center gap-3 rounded-[4px] border border-border px-3 py-3 text-sm">
+              <Image
+                src={brand.mark.src}
+                alt=""
+                width={32}
+                height={32}
+                unoptimized
+                className="size-8 rounded-full border border-primary bg-card p-0.5"
+              />
+              <span className="font-semibold">{user.username}</span>
+            </div>
+          ) : (
+            <div className="mt-3 w-full rounded-[4px] border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground">
+              Not logged in
+              <p className="mt-1 text-xs">You must be logged in to play upgrader</p>
+              <Button type="button" variant="secondary" size="sm" className="mt-2" onClick={openLogin}>
+                Login
+              </Button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -177,19 +212,6 @@ export function UpgraderPanel() {
           </p>
         </div>
       </section>
-
-      <DemoNotice
-        open={noticeOpen}
-        onOpenChange={setNoticeOpen}
-        title="Upgrade is demo only"
-        description="No inventory is spent and no item is awarded in this prototype."
-      />
-      <DemoNotice
-        open={loginNotice}
-        onOpenChange={setLoginNotice}
-        title="Login is not connected"
-        description="Use the header Login button for the account placeholder."
-      />
     </div>
   );
 }

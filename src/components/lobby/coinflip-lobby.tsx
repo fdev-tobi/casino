@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
-import { DemoNotice } from "@/components/lobby/demo-notice";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
@@ -23,17 +23,84 @@ import {
 } from "@/components/ui/sheet";
 import { formatRange } from "@/lib/format";
 import { coinFlipGames, historyEntries, lobbyStats } from "@/lib/mock-data";
-import type { CoinFlipGame } from "@/types/lobby";
+import type { CoinFlipGame, DemoPlayer } from "@/types/lobby";
+
+function userAsPlayer(username: string): DemoPlayer {
+  return {
+    id: `user-${username}`,
+    name: username,
+    initials: username.slice(0, 2).toUpperCase(),
+    color: "#5468f1",
+  };
+}
 
 export function CoinFlipLobby() {
+  const { user, openLogin } = useAuth();
+  const [games, setGames] = useState(() => [...coinFlipGames]);
   const [selected, setSelected] = useState<CoinFlipGame | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [notice, setNotice] = useState<{ title: string; description: string } | null>(null);
-  const openGames = useMemo(() => coinFlipGames.filter((game) => game.status !== "ended"), []);
+  const [joinedToast, setJoinedToast] = useState<string | null>(null);
+  const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
+
+  function requireUser() {
+    if (!user) {
+      openLogin();
+      return null;
+    }
+    return user;
+  }
+
+  function joinGame(game: CoinFlipGame) {
+    const current = requireUser();
+    if (!current) return;
+    const joiner = userAsPlayer(current.username);
+    setGames((list) =>
+      list.map((entry) =>
+        entry.id === game.id ? { ...entry, joiner, status: "full" as const } : entry,
+      ),
+    );
+    setSelected((currentSelected) =>
+      currentSelected?.id === game.id
+        ? { ...currentSelected, joiner, status: "full" }
+        : currentSelected,
+    );
+    setJoinedToast(`Joined ${game.host.name}'s match`);
+    window.setTimeout(() => setJoinedToast(null), 2000);
+  }
+
+  function createMatch() {
+    const current = requireUser();
+    if (!current) return;
+    const host = userAsPlayer(current.username);
+    const value = 120;
+    const created: CoinFlipGame = {
+      id: `cf-local-${Date.now()}`,
+      hash: Math.random().toString(16).slice(2).padEnd(32, "0").slice(0, 32),
+      catalog: "mm2",
+      status: "open",
+      host,
+      joiner: null,
+      items: [{ id: `local-item-${Date.now()}`, name: "Harbor Chips", value, tone: "cyan" }],
+      value,
+      rangeMin: Math.round(value * 0.95),
+      rangeMax: Math.round(value * 1.05),
+      createdAt: new Date().toISOString(),
+    };
+    setGames((list) => [created, ...list]);
+    setCreateOpen(false);
+    setJoinedToast("Match created");
+    window.setTimeout(() => setJoinedToast(null), 2000);
+  }
 
   return (
     <div className="flex w-full flex-col px-4 pt-3 pb-32">
+      {joinedToast ? (
+        <div className="mb-3 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+          {joinedToast}
+        </div>
+      ) : null}
+
       <div className="grid gap-2 md:grid-cols-3">
         <div className="rounded border bg-card px-4 py-2">
           <div className="text-xl font-semibold">{lobbyStats.totalItems}</div>
@@ -46,14 +113,14 @@ export function CoinFlipLobby() {
           <div className="font-semibold opacity-60">Total Value</div>
         </div>
         <div className="rounded border bg-card px-4 py-2">
-          <div className="text-xl font-semibold">{lobbyStats.activeGames}</div>
+          <div className="text-xl font-semibold">{openGames.length}</div>
           <div className="font-semibold opacity-60">Active Games</div>
         </div>
       </div>
 
       <div className="mt-4 mb-3 flex flex-col justify-between gap-2 sm:flex-row-reverse">
         <div className="flex items-center justify-start gap-2">
-          <Button type="button" onClick={() => setCreateOpen(true)}>
+          <Button type="button" onClick={() => (user ? setCreateOpen(true) : openLogin())}>
             Create
           </Button>
           <Button type="button" variant="secondary" onClick={() => setHistoryOpen(true)}>
@@ -61,7 +128,7 @@ export function CoinFlipLobby() {
           </Button>
         </div>
         <div>
-          <span className="inline-flex items-center justify-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background data-[state=active]:shadow-sm">
+          <span className="inline-flex items-center justify-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background">
             MM2
           </span>
         </div>
@@ -104,16 +171,7 @@ export function CoinFlipLobby() {
 
             <div className="flex flex-col gap-2">
               {game.status === "open" ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() =>
-                    setNotice({
-                      title: "Join is demo only",
-                      description: `Would join ${game.host.name}'s match for ${game.value} demo units.`,
-                    })
-                  }
-                >
+                <Button type="button" size="sm" onClick={() => joinGame(game)}>
                   Join
                 </Button>
               ) : null}
@@ -131,7 +189,7 @@ export function CoinFlipLobby() {
             <>
               <DialogHeader>
                 <DialogTitle>CoinFlip match</DialogTitle>
-                <DialogDescription>Demonstration match details. No wager is placed.</DialogDescription>
+                <DialogDescription>Match details for {selected.host.name}.</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2 text-center">
                 <div className="grid justify-items-center gap-2">
@@ -150,7 +208,7 @@ export function CoinFlipLobby() {
                       <span className="inline-flex size-14 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
                         ?
                       </span>
-                      <p className="text-sm text-muted-foreground">Joining...</p>
+                      <p className="text-sm text-muted-foreground">Waiting...</p>
                     </>
                   )}
                 </div>
@@ -188,17 +246,7 @@ export function CoinFlipLobby() {
                 ))}
               </ul>
               {selected.status === "open" ? (
-                <Button
-                  type="button"
-                  className="mt-2 w-full"
-                  onClick={() => {
-                    setSelected(null);
-                    setNotice({
-                      title: "Join is demo only",
-                      description: "No items move and no balance changes in this prototype.",
-                    });
-                  }}
-                >
+                <Button type="button" className="mt-2 w-full" onClick={() => joinGame(selected)}>
                   Join
                 </Button>
               ) : null}
@@ -211,23 +259,10 @@ export function CoinFlipLobby() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create coinflip</DialogTitle>
-            <DialogDescription>Choose mock items to list a demonstration match.</DialogDescription>
+            <DialogDescription>List a new match in the lobby.</DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Creating a match here only previews the flow. It does not list a real game or lock inventory.
-          </p>
-          <Button
-            type="button"
-            className="w-full"
-            onClick={() => {
-              setCreateOpen(false);
-              setNotice({
-                title: "Create is demo only",
-                description: "No match was published to a live lobby.",
-              });
-            }}
-          >
-            Create demo match
+          <Button type="button" className="w-full" onClick={createMatch}>
+            Create match
           </Button>
         </DialogContent>
       </Dialog>
@@ -236,7 +271,7 @@ export function CoinFlipLobby() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>History</SheetTitle>
-            <SheetDescription>Mock recent activity for this presentation.</SheetDescription>
+            <SheetDescription>Recent lobby activity.</SheetDescription>
           </SheetHeader>
           <ul className="mt-4 grid gap-2">
             {historyEntries.map((entry) => (
@@ -252,13 +287,6 @@ export function CoinFlipLobby() {
           </ul>
         </SheetContent>
       </Sheet>
-
-      <DemoNotice
-        open={notice !== null}
-        onOpenChange={(open) => !open && setNotice(null)}
-        title={notice?.title ?? "Demo only"}
-        description={notice?.description ?? ""}
-      />
     </div>
   );
 }

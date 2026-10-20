@@ -279,10 +279,10 @@ export const leaderboard: readonly LeaderboardRow[] = [
 
 export const chatMessages: readonly ChatMessage[] = [
   { id: "c1", user: "NovaSeat", text: "Lobby looks clean today.", at: "12:01" },
-  { id: "c2", user: "TideMark", text: "Demo values only — no live wagers.", at: "12:02" },
+  { id: "c2", user: "TideMark", text: "Anyone joining high rollers?", at: "12:02" },
   { id: "c3", user: "AshRail", text: "Checking the upgrader list.", at: "12:03" },
-  { id: "c4", user: "CircuitLynx", text: "Race podium is mock data.", at: "12:04" },
-  { id: "c5", user: "HarborWick", text: "Join opens a demo notice.", at: "12:05" },
+  { id: "c4", user: "CircuitLynx", text: "Race is heating up.", at: "12:04" },
+  { id: "c5", user: "HarborWick", text: "Good luck everyone.", at: "12:05" },
 ];
 
 export const historyEntries: readonly HistoryEntry[] = [

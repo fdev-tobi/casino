@@ -56,7 +56,7 @@ export const brand: BrandConfig = {
   name: "Adopt Luck",
   tagline: "Demo lobby for CoinFlip, JackPot, Upgrader, Race, and Leaderboard.",
   description:
-    "Adopt Luck is a presentation prototype of a branded item-game lobby. Modes, values, and chat use mock data. It does not offer wagering, payments, or verified valuations.",
+    "Adopt Luck — CoinFlip, JackPot, Upgrader, Race, and Leaderboard for in-game items.",
   logo: {
     src: "/brand/wordmark-transparent.png",
     alt: "Adopt Luck",

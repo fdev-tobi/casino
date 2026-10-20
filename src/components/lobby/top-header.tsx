@@ -1,11 +1,12 @@
 "use client";
 
-import { Coins, Gauge, LogIn, Trophy, Zap } from "lucide-react";
+import { Coins, Gauge, LogIn, LogOut, Trophy, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
+import { useAuth } from "@/components/lobby/auth-provider";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { gameModes } from "@/config/navigation";
@@ -19,27 +20,65 @@ const modeIcon: Record<(typeof gameModes)[number]["id"], ComponentType<SVGProps<
   leaderboard: Trophy,
 };
 
-export function TopHeader({ onLogin }: { onLogin: () => void }) {
+function BrandMark() {
+  return (
+    <Link href="/" aria-label={brand.name}>
+      <div className="flex h-fit items-center gap-3">
+        <Image
+          src={brand.mark.src}
+          alt=""
+          width={brand.mark.width}
+          height={brand.mark.height}
+          unoptimized
+          className="size-[30px]"
+        />
+        <div className="h-[30px] w-[2px] bg-white" />
+        <span className="text-lg font-bold uppercase">{brand.name}</span>
+      </div>
+    </Link>
+  );
+}
+
+function AuthControls() {
+  const { user, openLogin, logout } = useAuth();
+
+  return (
+    <div className="flex items-center gap-3" suppressHydrationWarning>
+      {user ? (
+        <>
+          <div className="flex items-center gap-2">
+            <Image
+              src={brand.mark.src}
+              alt=""
+              width={36}
+              height={36}
+              unoptimized
+              className="size-9 rounded-full border-2 border-primary bg-card object-cover p-0.5"
+            />
+            <span className="hidden max-w-[9rem] truncate text-sm font-semibold sm:inline">{user.username}</span>
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={logout} className="gap-1.5">
+            <LogOut aria-hidden="true" />
+            Logout
+          </Button>
+        </>
+      ) : (
+        <Button type="button" size="lg" onClick={openLogin} className="gap-2">
+          <LogIn aria-hidden="true" />
+          Login
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function TopHeader() {
   const pathname = usePathname();
 
   return (
     <nav className="fixed z-40 flex h-20 w-full items-center justify-between border-b bg-nav px-8">
-      {/* Desktop: logo + mode links */}
       <div className="hidden items-center gap-16 xl:flex">
-        <Link href="/" aria-label={brand.name}>
-          <div className="flex h-fit items-center gap-3">
-            <Image
-              src={brand.mark.src}
-              alt=""
-              width={brand.mark.width}
-              height={brand.mark.height}
-              unoptimized
-              className="size-[30px]"
-            />
-            <div className="h-[30px] w-[2px] bg-white" />
-            <span className="text-lg font-bold uppercase">{brand.name}</span>
-          </div>
-        </Link>
+        <BrandMark />
         <ul className="flex items-center gap-0 text-sm">
           {gameModes.map((mode) => {
             const active = mode.href === "/" ? pathname === "/" : pathname.startsWith(mode.href);
@@ -62,34 +101,13 @@ export function TopHeader({ onLogin }: { onLogin: () => void }) {
         </ul>
       </div>
 
-      {/* Desktop login */}
       <div className="hidden xl:block">
-        <Button type="button" size="lg" onClick={onLogin} className="gap-2">
-          <LogIn aria-hidden="true" />
-          Login
-        </Button>
+        <AuthControls />
       </div>
 
-      {/* Mobile header */}
       <div className="flex w-full items-center justify-between xl:hidden">
-        <Link href="/" aria-label={brand.name}>
-          <div className="flex h-fit items-center gap-3">
-            <Image
-              src={brand.mark.src}
-              alt=""
-              width={brand.mark.width}
-              height={brand.mark.height}
-              unoptimized
-              className="size-[30px]"
-            />
-            <div className="h-[30px] w-[2px] bg-white" />
-            <span className="text-lg font-bold uppercase">{brand.name}</span>
-          </div>
-        </Link>
-        <Button type="button" size="lg" onClick={onLogin} className="gap-2">
-          <LogIn aria-hidden="true" />
-          Login
-        </Button>
+        <BrandMark />
+        <AuthControls />
       </div>
     </nav>
   );
