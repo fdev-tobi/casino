@@ -121,10 +121,10 @@ export function UpgraderPanel() {
       <section className="grid gap-4 rounded border bg-card p-4 lg:grid-cols-[1fr_1.1fr]">
         <div className="grid place-items-center py-4">
           <UpgraderWheel
-            key={spinToken}
             chance={chance}
             spinning={spinning}
             won={spinWon}
+            spinKey={spinToken}
             onSpinEnd={handleSpinEnd}
           />
           <p className="mt-3 text-sm font-medium text-primary">Multiplier: {multiplier.toFixed(2)}x</p>
