@@ -26,7 +26,8 @@ export function ItemChip({
   size?: "sm" | "md" | "lg";
 }) {
   const { getItem } = useDisplayValues();
-  const catalog = item.id ? getItem(item.id) : undefined;
+  const catalogId = item.id?.includes("#") ? item.id.slice(0, item.id.indexOf("#")) : item.id;
+  const catalog = catalogId ? getItem(catalogId) : undefined;
   const imageUrl = item.imageUrl || catalog?.imageUrl || null;
   const dim = size === "sm" ? "h-10 w-10" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
 

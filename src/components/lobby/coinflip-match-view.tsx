@@ -116,6 +116,11 @@ export function CoinFlipMatchView({
   const hostPercent = hasJoiner ? "50.00%" : "100.00%";
   const joinerPercent = hasJoiner ? "50.00%" : "0%";
   const spinning = game.status === "full" || game.status === "ended";
+  const hostSide = game.hostSide ?? "heads";
+  const leftPlayer = hostSide === "heads" ? game.host : game.joiner;
+  const rightPlayer = hostSide === "heads" ? game.joiner : game.host;
+  const leftWaiting = hostSide === "heads" ? false : !hasJoiner;
+  const rightWaiting = hostSide === "heads" ? !hasJoiner : false;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -140,11 +145,11 @@ export function CoinFlipMatchView({
       </div>
 
       <div className="relative mt-3 flex flex-1 items-center justify-between gap-2 px-1 py-10 sm:px-3 sm:py-12">
-        <PlayerColumn player={game.host} side="heads" />
+        <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
           <CoinFlipCoin spinning={spinning} />
         </div>
-        <PlayerColumn player={game.joiner} side="tails" waiting={!hasJoiner} />
+        <PlayerColumn player={rightPlayer} side="tails" waiting={rightWaiting} />
       </div>
 
       <button

@@ -17,6 +17,8 @@ export type DemoPlayer = {
   color: string;
 };
 
+export type CoinSide = "heads" | "tails";
+
 export type CoinFlipGame = {
   id: string;
   hash: string;
@@ -24,6 +26,7 @@ export type CoinFlipGame = {
   status: CoinFlipStatus;
   host: DemoPlayer;
   joiner: DemoPlayer | null;
+  hostSide: CoinSide;
   items: readonly DemoItem[];
   value: number;
   rangeMin: number;

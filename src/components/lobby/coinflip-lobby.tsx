@@ -3,19 +3,13 @@
 import { useMemo, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
-import { Avatar } from "@/components/lobby/avatar";
+import { CoinFlipGameRow } from "@/components/lobby/coinflip-game-row";
 import { CoinFlipMatchView } from "@/components/lobby/coinflip-match-view";
-import { useDisplayValues } from "@/components/lobby/display-values-provider";
-import { ItemChip } from "@/components/lobby/item-chip";
+import { CreateCoinflipDialog } from "@/components/lobby/create-coinflip-dialog";
+import { useInventory } from "@/components/lobby/inventory-provider";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -23,9 +17,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { formatRange } from "@/lib/format";
-import { coinFlipGames, defaultWagerItem, historyEntries, lobbyStats } from "@/lib/mock-data";
-import type { CoinFlipGame, DemoPlayer } from "@/types/lobby";
+import { coinFlipGames, lobbyStats } from "@/lib/mock-data";
+import type { CoinFlipGame, CoinSide, DemoItem, DemoPlayer } from "@/types/lobby";
 
 function userAsPlayer(username: string): DemoPlayer {
   return {
@@ -36,9 +29,14 @@ function userAsPlayer(username: string): DemoPlayer {
   };
 }
 
+function isUserInGame(game: CoinFlipGame, username: string): boolean {
+  const key = username.toLowerCase();
+  return game.host.name.toLowerCase() === key || game.joiner?.name.toLowerCase() === key;
+}
+
 export function CoinFlipLobby() {
   const { user, openLogin } = useAuth();
-  const { sumAmounts } = useDisplayValues();
+  const { removeByIds } = useInventory();
   const [games, setGames] = useState(() => [...coinFlipGames]);
   const [selected, setSelected] = useState<CoinFlipGame | null>(null);
   const [matchViewKey, setMatchViewKey] = useState(0);
@@ -50,7 +48,15 @@ export function CoinFlipLobby() {
     setSelected(game);
     setMatchViewKey((key) => key + 1);
   }
+
   const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
+
+  const myHistory = useMemo(() => {
+    if (!user) return [];
+    return games
+      .filter((game) => isUserInGame(game, user.username))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [games, user]);
 
   function requireUser() {
     if (!user) {
@@ -78,11 +84,11 @@ export function CoinFlipLobby() {
     window.setTimeout(() => setJoinedToast(null), 2000);
   }
 
-  function createMatch() {
+  function createMatch(payload: { items: DemoItem[]; side: CoinSide }) {
     const current = requireUser();
-    if (!current) return;
+    if (!current || payload.items.length === 0) return;
     const host = userAsPlayer(current.username);
-    const value = defaultWagerItem.value;
+    const value = payload.items.reduce((sum, item) => sum + item.value, 0);
     const created: CoinFlipGame = {
       id: `cf-local-${Date.now()}`,
       hash: Math.random().toString(16).slice(2).padEnd(32, "0").slice(0, 32),
@@ -90,12 +96,14 @@ export function CoinFlipLobby() {
       status: "open",
       host,
       joiner: null,
-      items: [{ ...defaultWagerItem }],
+      hostSide: payload.side,
+      items: payload.items.map((item) => ({ ...item })),
       value,
       rangeMin: Math.round(value * 0.95),
       rangeMax: Math.round(value * 1.05),
       createdAt: new Date().toISOString(),
     };
+    removeByIds(payload.items.map((item) => item.id));
     setGames((list) => [created, ...list]);
     setCreateOpen(false);
     setJoinedToast("Match created");
@@ -132,7 +140,11 @@ export function CoinFlipLobby() {
           <Button type="button" onClick={() => (user ? setCreateOpen(true) : openLogin())}>
             Create
           </Button>
-          <Button type="button" variant="secondary" onClick={() => setHistoryOpen(true)}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => (user ? setHistoryOpen(true) : openLogin())}
+          >
             History
           </Button>
         </div>
@@ -145,63 +157,12 @@ export function CoinFlipLobby() {
 
       <div className="flex-1 space-y-2" aria-label="Active coinflip games">
         {openGames.map((game) => (
-          <div
+          <CoinFlipGameRow
             key={game.id}
-            className="flex flex-col items-center justify-between gap-4 rounded border bg-card px-4 py-4 md:flex-row md:py-2"
-          >
-            <div className="flex items-center gap-4">
-              <Avatar player={game.host} size="lg" className="size-14 border-2" />
-              <span className="mt-2 text-sm font-semibold opacity-50 md:hidden">VS</span>
-              {game.joiner ? (
-                <Avatar player={game.joiner} size="lg" className="size-14 border-2" />
-              ) : (
-                <span className="inline-flex size-14 items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
-                  ?
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 items-center gap-2 lg:grid-cols-2">
-              <div className="flex w-56 flex-col items-center gap-1 md:items-start">
-                <div className="flex items-center justify-center -space-x-4 overflow-hidden md:justify-start">
-                  {game.items.slice(0, 4).map((item) => (
-                    <ItemChip key={item.id} item={item} size="lg" />
-                  ))}
-                  {game.items.length > 4 ? (
-                    <span className="pl-4 text-xs text-white/50">+{game.items.length - 4}</span>
-                  ) : null}
-                </div>
-                <p className="max-w-52 truncate text-xs text-white/55">
-                  {game.items.map((item) => item.name).join(", ")}
-                </p>
-              </div>
-              <div className="hidden lg:block" />
-            </div>
-
-            <div className="flex w-36 flex-col text-center">
-              <ValueGem
-                amount={sumAmounts([...game.items])}
-                className="justify-center text-base font-semibold"
-              />
-              <div className="text-sm opacity-50">
-                {formatRange(
-                  Math.round(sumAmounts([...game.items]) * 0.95),
-                  Math.round(sumAmounts([...game.items]) * 1.05),
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {game.status === "open" ? (
-                <Button type="button" size="sm" onClick={() => joinGame(game)}>
-                  Join
-                </Button>
-              ) : null}
-              <Button type="button" size="sm" variant="secondary" onClick={() => openMatch(game)}>
-                View
-              </Button>
-            </div>
-          </div>
+            game={game}
+            onJoin={() => joinGame(game)}
+            onView={() => openMatch(game)}
+          />
         ))}
       </div>
 
@@ -217,36 +178,40 @@ export function CoinFlipLobby() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create coinflip</DialogTitle>
-            <DialogDescription>List a new match in the lobby.</DialogDescription>
-          </DialogHeader>
-          <Button type="button" className="w-full" onClick={createMatch}>
-            Create match
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <CreateCoinflipDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreate={createMatch}
+      />
 
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-        <SheetContent>
+        <SheetContent className="w-full max-w-full sm:w-[min(100%,36rem)] sm:max-w-xl">
           <SheetHeader>
             <SheetTitle>History</SheetTitle>
-            <SheetDescription>Recent lobby activity.</SheetDescription>
+            <SheetDescription>Coinflip matches you created or joined.</SheetDescription>
           </SheetHeader>
-          <ul className="mt-4 grid gap-2">
-            {historyEntries.map((entry) => (
-              <li key={entry.id} className="rounded border bg-card px-4 py-2">
-                <div className="flex items-center justify-between gap-2 text-xs text-white/50">
-                  <span className="font-semibold uppercase text-primary">{entry.mode}</span>
-                  <span>{entry.at}</span>
-                </div>
-                <p className="mt-1 text-sm">{entry.summary}</p>
-                <ValueGem amount={entry.value} className="mt-2" />
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 space-y-2 overflow-y-auto pb-6" aria-label="Your coinflip history">
+            {myHistory.length === 0 ? (
+              <div className="rounded border border-dashed border-white/15 px-4 py-10 text-center">
+                <p className="text-base font-semibold">No matches yet</p>
+                <p className="mt-1 text-sm text-white/50">
+                  Create or join a coinflip and it will show up here.
+                </p>
+              </div>
+            ) : (
+              myHistory.map((game) => (
+                <CoinFlipGameRow
+                  key={game.id}
+                  game={game}
+                  showJoin={false}
+                  onView={() => {
+                    setHistoryOpen(false);
+                    openMatch(game);
+                  }}
+                />
+              ))
+            )}
+          </div>
         </SheetContent>
       </Sheet>
     </div>

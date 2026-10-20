@@ -8,10 +8,10 @@ import { AuthProvider } from "@/components/lobby/auth-provider";
 import { BottomNav } from "@/components/lobby/bottom-nav";
 import { ChatPanel } from "@/components/lobby/chat-panel";
 import { DisplayValuesProvider } from "@/components/lobby/display-values-provider";
+import { InventoryProvider } from "@/components/lobby/inventory-provider";
 import { LoginDialog } from "@/components/lobby/login-dialog";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
-import { ValueAttribution } from "@/components/lobby/value-attribution";
 import {
   Sheet,
   SheetContent,
@@ -37,9 +37,6 @@ function ShellInner({ children }: { children: ReactNode }) {
 
         <div className="flex w-full min-w-0 flex-col overflow-auto">
           <StatusBanner />
-          <div className="px-3 pb-1 sm:px-4">
-            <ValueAttribution />
-          </div>
           <main id="content" className="min-w-0 flex-1">
             {children}
           </main>
@@ -102,7 +99,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <DisplayValuesProvider>
-        <ShellInner>{children}</ShellInner>
+        <InventoryProvider>
+          <ShellInner>{children}</ShellInner>
+        </InventoryProvider>
       </DisplayValuesProvider>
     </AuthProvider>
   );

@@ -41,7 +41,7 @@ function item(
 }
 
 /** Demo inventory ids match `display-values.snapshot.json` (AMVerse ×2). */
-const catalogItems: readonly DemoItem[] = [
+export const catalogItems: readonly DemoItem[] = [
   item("pet-bat-dragon", "Bat Dragon", 2030, "amber", "Bat Dragon.png"),
   item("pet-shadow-dragon", "Shadow Dragon", 1690, "amber", "Shadow Dragon.png"),
   item("pet-giraffe", "Giraffe", 948, "lime", "Giraffe.png"),
@@ -82,6 +82,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[0],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[1]],
     value: catalogItems[1].value,
     ...(() => {
@@ -97,6 +98,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[1],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[2]],
     value: catalogItems[2].value,
     ...(() => {
@@ -112,6 +114,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[2],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[9], catalogItems[10]],
     value: gameValue([catalogItems[9], catalogItems[10]]),
     ...(() => {
@@ -128,6 +131,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "full",
     host: players[6],
     joiner: players[3],
+    hostSide: "heads",
     items: [catalogItems[0]],
     value: catalogItems[0].value,
     ...(() => {
@@ -143,6 +147,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[4],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[4]],
     value: catalogItems[4].value,
     ...(() => {
@@ -158,6 +163,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[5],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[7]],
     value: catalogItems[7].value,
     ...(() => {
@@ -173,6 +179,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[7],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[8]],
     value: catalogItems[8].value,
     ...(() => {
@@ -188,6 +195,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[0],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[11]],
     value: catalogItems[11].value,
     ...(() => {
@@ -203,6 +211,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "open",
     host: players[1],
     joiner: null,
+    hostSide: "heads",
     items: [catalogItems[6]],
     value: catalogItems[6].value,
     ...(() => {
@@ -218,6 +227,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     status: "ended",
     host: players[2],
     joiner: players[4],
+    hostSide: "heads",
     items: [catalogItems[12], catalogItems[5]],
     value: gameValue([catalogItems[12], catalogItems[5]]),
     ...(() => {
@@ -364,6 +374,18 @@ export const historyEntries: readonly HistoryEntry[] = [
 
 /** Default pet used when creating a local demo wager. */
 export const defaultWagerItem: DemoItem = catalogItems[10];
+
+/** Starter pets treated as already deposited for the logged-in demo inventory. */
+export const initialDepositedInventory: readonly DemoItem[] = [
+  catalogItems[10],
+  catalogItems[11],
+  catalogItems[8],
+  catalogItems[9],
+  catalogItems[4],
+  catalogItems[5],
+  catalogItems[6],
+  catalogItems[3],
+];
 
 export function getCoinFlipById(id: string): CoinFlipGame | undefined {
   return coinFlipGames.find((game) => game.id === id);
