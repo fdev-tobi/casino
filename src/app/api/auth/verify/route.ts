@@ -6,6 +6,7 @@ import {
   lookupRobloxUser,
   profileContainsPhrase,
 } from "@/lib/auth/roblox-verify";
+import { fetchRobloxHeadshots } from "@/lib/roblox/avatars";
 
 export async function POST(request: Request) {
   let body: { challengeId?: string };
@@ -54,10 +55,14 @@ export async function POST(request: Request) {
 
   consumeChallenge(challengeId);
 
+  const headshots = await fetchRobloxHeadshots([lookup.userId]);
+  const avatarUrl = headshots.get(lookup.userId) ?? null;
+
   return NextResponse.json({
     ok: true,
     username: lookup.name,
     displayName: lookup.displayName,
     userId: lookup.userId,
+    avatarUrl,
   });
 }

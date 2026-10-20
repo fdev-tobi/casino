@@ -10,6 +10,7 @@ import { ChatPanel } from "@/components/lobby/chat-panel";
 import { DisplayValuesProvider } from "@/components/lobby/display-values-provider";
 import { InventoryProvider } from "@/components/lobby/inventory-provider";
 import { LoginDialog } from "@/components/lobby/login-dialog";
+import { RobloxAvatarProvider } from "@/components/lobby/roblox-avatar-provider";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
 import {
@@ -99,9 +100,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <DisplayValuesProvider>
-        <InventoryProvider>
-          <ShellInner>{children}</ShellInner>
-        </InventoryProvider>
+        <RobloxAvatarProvider>
+          <InventoryProvider>
+            <ShellInner>{children}</ShellInner>
+          </InventoryProvider>
+        </RobloxAvatarProvider>
       </DisplayValuesProvider>
     </AuthProvider>
   );

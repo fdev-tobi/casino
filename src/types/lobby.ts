@@ -15,6 +15,10 @@ export type DemoPlayer = {
   name: string;
   initials: string;
   color: string;
+  /** When set, Avatar loads this Roblox user's headshot. */
+  robloxUserId?: number;
+  /** Optional prefetched Roblox headshot URL. */
+  avatarUrl?: string | null;
 };
 
 export type CoinSide = "heads" | "tails";

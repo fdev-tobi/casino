@@ -12,11 +12,21 @@ import {
 
 export type AuthUser = {
   username: string;
+  displayName?: string;
+  userId?: number;
+  avatarUrl?: string | null;
+};
+
+type LoginPayload = {
+  username: string;
+  displayName?: string;
+  userId?: number;
+  avatarUrl?: string | null;
 };
 
 type AuthContextValue = {
   user: AuthUser | null;
-  login: (username: string) => void;
+  login: (payload: LoginPayload | string) => void;
   logout: () => void;
   openLogin: () => void;
   loginOpen: boolean;
@@ -26,6 +36,18 @@ type AuthContextValue = {
 const STORAGE_KEY = "adopt-luck-user";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function normalizeUser(payload: LoginPayload | string): AuthUser {
+  if (typeof payload === "string") {
+    return { username: payload.trim() };
+  }
+  return {
+    username: payload.username.trim(),
+    displayName: payload.displayName?.trim() || undefined,
+    userId: typeof payload.userId === "number" ? payload.userId : undefined,
+    avatarUrl: payload.avatarUrl ?? null,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -38,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed = JSON.parse(raw) as AuthUser;
         if (parsed?.username) {
-          setUser(parsed);
+          setUser(normalizeUser(parsed));
         }
       }
     } catch {
@@ -47,8 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-  const login = useCallback((username: string) => {
-    const next = { username: username.trim() };
+  const login = useCallback((payload: LoginPayload | string) => {
+    const next = normalizeUser(payload);
     setUser(next);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setLoginOpen(false);

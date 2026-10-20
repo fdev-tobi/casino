@@ -38,6 +38,8 @@ export function JackpotPanel() {
       name: user.username,
       initials: user.username.slice(0, 2).toUpperCase(),
       color: "#5468f1",
+      robloxUserId: user.userId,
+      avatarUrl: user.avatarUrl,
     };
     const value = defaultWagerItem.value;
     setEntries((current) => {

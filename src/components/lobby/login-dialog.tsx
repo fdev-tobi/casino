@@ -107,6 +107,9 @@ export function LoginDialog() {
         error?: string;
         code?: string;
         username?: string;
+        displayName?: string;
+        userId?: number;
+        avatarUrl?: string | null;
       };
       if (!response.ok || !json.ok || !json.username) {
         setError(
@@ -115,7 +118,12 @@ export function LoginDialog() {
         );
         return;
       }
-      login(json.username);
+      login({
+        username: json.username,
+        displayName: json.displayName,
+        userId: json.userId,
+        avatarUrl: json.avatarUrl,
+      });
     } catch {
       setError("Verification failed. Try again in a moment.");
     } finally {

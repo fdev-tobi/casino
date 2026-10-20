@@ -11,15 +11,16 @@ import type {
   UpgraderItem,
 } from "@/types/lobby";
 
+/** Demo seats use real Roblox user ids so lobby avatars resolve to profile headshots. */
 const players: readonly DemoPlayer[] = [
-  { id: "p1", name: "NovaSeat", initials: "NS", color: "#5468f1" },
-  { id: "p2", name: "TideMark", initials: "TM", color: "#3dd6c6" },
-  { id: "p3", name: "AshRail", initials: "AR", color: "#f0a35e" },
-  { id: "p4", name: "QuietAnte", initials: "QA", color: "#c084fc" },
-  { id: "p5", name: "CircuitLynx", initials: "CL", color: "#34d399" },
-  { id: "p6", name: "HarborWick", initials: "HW", color: "#fb7185" },
-  { id: "p7", name: "MarbleFan", initials: "MF", color: "#60a5fa" },
-  { id: "p8", name: "SecondLight", initials: "SL", color: "#a78bfa" },
+  { id: "p1", name: "NovaSeat", initials: "NS", color: "#5468f1", robloxUserId: 1 },
+  { id: "p2", name: "TideMark", initials: "TM", color: "#3dd6c6", robloxUserId: 156 },
+  { id: "p3", name: "AshRail", initials: "AR", color: "#f0a35e", robloxUserId: 261 },
+  { id: "p4", name: "QuietAnte", initials: "QA", color: "#c084fc", robloxUserId: 2 },
+  { id: "p5", name: "CircuitLynx", initials: "CL", color: "#34d399", robloxUserId: 3 },
+  { id: "p6", name: "HarborWick", initials: "HW", color: "#fb7185", robloxUserId: 8 },
+  { id: "p7", name: "MarbleFan", initials: "MF", color: "#60a5fa", robloxUserId: 50 },
+  { id: "p8", name: "SecondLight", initials: "SL", color: "#a78bfa", robloxUserId: 5774246 },
 ];
 
 const IMG = "https://data.amverse.co/images/pets";

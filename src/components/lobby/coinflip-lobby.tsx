@@ -20,12 +20,18 @@ import {
 import { coinFlipGames, lobbyStats } from "@/lib/mock-data";
 import type { CoinFlipGame, CoinSide, DemoItem, DemoPlayer } from "@/types/lobby";
 
-function userAsPlayer(username: string): DemoPlayer {
+function userAsPlayer(
+  username: string,
+  userId?: number,
+  avatarUrl?: string | null,
+): DemoPlayer {
   return {
     id: `user-${username}`,
     name: username,
     initials: username.slice(0, 2).toUpperCase(),
     color: "#5468f1",
+    robloxUserId: userId,
+    avatarUrl,
   };
 }
 
@@ -69,7 +75,7 @@ export function CoinFlipLobby() {
   function joinGame(game: CoinFlipGame) {
     const current = requireUser();
     if (!current) return;
-    const joiner = userAsPlayer(current.username);
+    const joiner = userAsPlayer(current.username, current.userId, current.avatarUrl);
     setGames((list) =>
       list.map((entry) =>
         entry.id === game.id ? { ...entry, joiner, status: "full" as const } : entry,
@@ -87,7 +93,7 @@ export function CoinFlipLobby() {
   function createMatch(payload: { items: DemoItem[]; side: CoinSide }) {
     const current = requireUser();
     if (!current || payload.items.length === 0) return;
-    const host = userAsPlayer(current.username);
+    const host = userAsPlayer(current.username, current.userId, current.avatarUrl);
     const value = payload.items.reduce((sum, item) => sum + item.value, 0);
     const created: CoinFlipGame = {
       id: `cf-local-${Date.now()}`,

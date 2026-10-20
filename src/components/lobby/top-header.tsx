@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
+import { Avatar } from "@/components/lobby/avatar";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { gameModes } from "@/config/navigation";
@@ -48,16 +49,19 @@ function AuthControls() {
       {user ? (
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <Image
-              src={brand.mark.src}
-              alt=""
-              width={36}
-              height={36}
-              unoptimized
-              className="size-8 shrink-0 rounded-full border-2 border-primary bg-card object-cover p-0.5 sm:size-9"
+            <Avatar
+              player={{
+                name: user.username,
+                initials: user.username.slice(0, 2).toUpperCase(),
+                color: "#5468f1",
+                robloxUserId: user.userId,
+                avatarUrl: user.avatarUrl,
+              }}
+              size="sm"
+              className="size-8 border-2 border-primary sm:size-9"
             />
             <span className="hidden max-w-[7rem] truncate text-sm font-semibold sm:inline md:max-w-[9rem]">
-              {user.username}
+              {user.displayName || user.username}
             </span>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={logout} className="gap-1.5 px-3">
