@@ -28,13 +28,13 @@ function SheetContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-full w-[min(100%,20rem)] flex-col gap-6 overflow-y-auto border-l border-border bg-popover p-6 text-popover-foreground shadow-card",
+          "fixed inset-y-0 right-0 z-50 flex h-full w-[min(100%,20rem)] flex-col gap-4 overflow-y-auto border-l border-border bg-popover p-4 text-popover-foreground",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-3 right-3 inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+        <DialogPrimitive.Close className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary hover:text-foreground">
           <X aria-hidden="true" />
           <span className="sr-only">Close menu</span>
         </DialogPrimitive.Close>
@@ -49,7 +49,7 @@ function SheetHeader({ className, ...props }: ComponentProps<"div">) {
 
 function SheetTitle({ className, ...props }: ComponentProps<typeof DialogPrimitive.Title>) {
   return (
-    <DialogPrimitive.Title className={cn("text-2xl font-bold", className)} {...props} />
+    <DialogPrimitive.Title className={cn("text-lg font-semibold", className)} {...props} />
   );
 }
 

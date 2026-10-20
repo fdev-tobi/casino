@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { BottomNav } from "@/components/lobby/bottom-nav";
+import { ChatPanel } from "@/components/lobby/chat-panel";
 import { DemoNotice } from "@/components/lobby/demo-notice";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
@@ -24,8 +25,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { brand } from "@/config/brand";
 import { footerLegal, gameModes } from "@/config/navigation";
-import { chatMessages } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -34,53 +35,34 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const [draft, setDraft] = useState("");
 
   return (
-    <div className="flex min-h-full flex-col pb-14">
+    <div className="flex min-h-dvh flex-col">
       <TopHeader onLogin={() => setLoginOpen(true)} />
-      <StatusBanner />
 
-      <div className="mx-auto flex w-full max-w-5xl flex-1 gap-0 lg:gap-6 lg:px-4">
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-44 shrink-0 py-4 lg:block">
-          <p className="mb-2 px-2 text-[0.65rem] font-semibold tracking-[0.16em] uppercase text-muted-foreground">
-            Modes
-          </p>
-          <nav aria-label="Game modes" className="grid gap-1">
-            {gameModes.map((mode) => {
-              const active = mode.href === "/" ? pathname === "/" : pathname.startsWith(mode.href);
-              return (
-                <Link
-                  key={mode.id}
-                  href={mode.href}
-                  className={cn(
-                    "rounded-md px-3 py-2.5 text-sm font-semibold",
-                    active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  {mode.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="mt-8 grid gap-1 px-2">
+      <div className="mt-20 flex flex-1 overflow-auto">
+        <ChatPanel
+          className="hidden w-1/4 min-w-[22rem] flex-col gap-2 bg-chat px-3 pt-3 xl:flex"
+          onSendAttempt={() => setNoticeOpen(true)}
+        />
+
+        <div className="flex w-full flex-col overflow-auto">
+          <StatusBanner />
+          <main id="content" className="flex-1">
+            {children}
+          </main>
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 p-3 text-sm text-white/40">
+            <span>{brand.name} is a demonstration prototype. Not affiliated with ROBLOX corporation.</span>
             {footerLegal.map((item) => (
-              <Link key={item.href} href={item.href} className="text-xs text-muted-foreground hover:text-foreground">
+              <Link key={item.href} href={item.href} className="hover:text-white/70">
                 {item.label}
               </Link>
             ))}
           </div>
-        </aside>
-
-        <main id="content" className="min-w-0 flex-1 px-4 py-4 sm:py-6">
-          {children}
-        </main>
+        </div>
       </div>
 
-      <BottomNav
-        onGames={() => setGamesOpen(true)}
-        onChat={() => setChatOpen(true)}
-      />
+      <BottomNav onGames={() => setGamesOpen(true)} onChat={() => setChatOpen(true)} />
 
       <Sheet open={gamesOpen} onOpenChange={setGamesOpen}>
         <SheetContent>
@@ -89,53 +71,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SheetDescription>Choose a demonstration mode.</SheetDescription>
           </SheetHeader>
           <nav className="mt-4 grid gap-1" aria-label="Mobile game modes">
-            {gameModes.map((mode) => (
-              <Link
-                key={mode.id}
-                href={mode.href}
-                className="inline-flex min-h-11 items-center rounded-md px-3 text-base font-semibold"
-                onClick={() => setGamesOpen(false)}
-              >
-                {mode.label}
-              </Link>
-            ))}
+            {gameModes.map((mode) => {
+              const active = mode.href === "/" ? pathname === "/" : pathname.startsWith(mode.href);
+              return (
+                <Link
+                  key={mode.id}
+                  href={mode.href}
+                  className={cn(
+                    "inline-flex h-10 items-center rounded-md px-3 text-sm font-semibold uppercase",
+                    active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary",
+                  )}
+                  onClick={() => setGamesOpen(false)}
+                >
+                  {mode.label}
+                </Link>
+              );
+            })}
           </nav>
         </SheetContent>
       </Sheet>
 
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-        <SheetContent>
-          <SheetHeader>
+        <SheetContent className="bg-chat p-3">
+          <SheetHeader className="sr-only">
             <SheetTitle>Chat</SheetTitle>
-            <SheetDescription>Mock lobby chat. Messages are not live.</SheetDescription>
+            <SheetDescription>Mock lobby chat.</SheetDescription>
           </SheetHeader>
-          <ul className="mt-4 grid max-h-[55vh] gap-3 overflow-y-auto">
-            {chatMessages.map((message) => (
-              <li key={message.id} className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{message.user}</span>
-                  <span>{message.at}</span>
-                </div>
-                <p className="mt-1 text-sm">{message.text}</p>
-              </li>
-            ))}
-          </ul>
-          <form
-            className="mt-4 flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setDraft("");
-              setNoticeOpen(true);
-            }}
-          >
-            <Input
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Write a demo message"
-              aria-label="Chat message"
-            />
-            <Button type="submit">Send</Button>
-          </form>
+          <ChatPanel className="flex h-full flex-col gap-2" onSendAttempt={() => setNoticeOpen(true)} />
         </SheetContent>
       </Sheet>
 
@@ -152,6 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Input placeholder="Password" type="password" aria-label="Password" disabled />
             <Button
               type="button"
+              size="lg"
               onClick={() => {
                 setLoginOpen(false);
                 setNoticeOpen(true);

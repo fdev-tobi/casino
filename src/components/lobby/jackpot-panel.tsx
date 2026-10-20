@@ -22,39 +22,40 @@ export function JackpotPanel() {
   }, []);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-xl border border-border bg-card p-5">
-        <div className="mb-4 inline-flex rounded-md border border-primary/40 bg-primary/15 px-3 py-1.5 text-xs font-bold tracking-[0.14em] uppercase text-primary">
+    <div className="flex w-full flex-col px-4 pt-3 pb-32">
+    <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="rounded border bg-card p-4">
+        <div className="mb-4 inline-flex items-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background">
           MM2
         </div>
         <div className="relative mx-auto flex size-56 items-center justify-center sm:size-64">
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: `conic-gradient(var(--primary) ${progress * 360}deg, rgba(148,163,200,0.15) 0deg)`,
+              background: `conic-gradient(var(--primary) ${progress * 360}deg, #22242f 0deg)`,
             }}
           />
-          <div className="absolute inset-3 rounded-full bg-[#0d111c]" />
+          <div className="absolute inset-3 rounded-full bg-background" />
           <div className="relative z-10 grid text-center">
             <ValueGem amount={jackpotRound.pot} className="justify-center text-2xl" />
-            <p className="mt-2 font-mono text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               {jackpotRound.entries.length} | {seconds}s
             </p>
           </div>
         </div>
-        <Button type="button" className="mt-6 w-full" size="lg" onClick={() => setNoticeOpen(true)}>
+        <Button type="button" className="mt-6 w-full" onClick={() => setNoticeOpen(true)}>
           JOIN
         </Button>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold tracking-[0.14em] uppercase text-muted-foreground">Entries</h2>
+      <section className="rounded border bg-card p-4">
+        <h2 className="text-xs font-semibold tracking-wide uppercase text-white/50">Entries</h2>
         <ul className="mt-3 grid gap-2">
           {jackpotRound.entries.map((entry) => (
-            <li key={entry.id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2">
+            <li key={entry.id} className="flex items-center gap-3 rounded border bg-card px-4 py-2">
               <Avatar player={entry.player} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{entry.player.name}</p>
+                <p className="truncate text-sm font-medium">{entry.player.name}</p>
                 <div className="mt-1 flex items-center gap-1">
                   {entry.items.map((item) => (
                     <ItemChip key={item.id} item={item} size="sm" />
@@ -76,6 +77,7 @@ export function JackpotPanel() {
         title="Join jackpot is demo only"
         description="The wheel and timer are presentation controls. No pot is funded and no winner is paid."
       />
+    </div>
     </div>
   );
 }

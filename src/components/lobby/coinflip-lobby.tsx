@@ -33,27 +33,26 @@ export function CoinFlipLobby() {
   const openGames = useMemo(() => coinFlipGames.filter((game) => game.status !== "ended"), []);
 
   return (
-    <div className="grid gap-4">
-      <section className="grid grid-cols-3 gap-2 sm:gap-3">
-        {[
-          ["Total Items", lobbyStats.totalItems],
-          ["Total Value", lobbyStats.totalValue],
-          ["Active Games", lobbyStats.activeGames],
-        ].map(([label, value]) => (
-          <div key={label as string} className="rounded-lg border border-border bg-card px-3 py-3 text-center">
-            <p className="font-mono text-xl font-bold text-primary sm:text-3xl">
-              {typeof value === "number" ? value.toLocaleString("en-US") : value}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-muted-foreground sm:text-sm">{label}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center rounded-md border border-primary/40 bg-primary/15 px-3 py-1.5 text-xs font-bold tracking-[0.14em] uppercase text-primary">
-          MM2
+    <div className="flex w-full flex-col px-4 pt-3 pb-32">
+      <div className="grid gap-2 md:grid-cols-3">
+        <div className="rounded border bg-card px-4 py-2">
+          <div className="text-xl font-semibold">{lobbyStats.totalItems}</div>
+          <div className="font-semibold opacity-60">Total Items</div>
         </div>
-        <div className="flex gap-2">
+        <div className="rounded border bg-card px-4 py-2">
+          <div className="flex items-center gap-2 text-xl font-semibold">
+            <ValueGem amount={lobbyStats.totalValue} />
+          </div>
+          <div className="font-semibold opacity-60">Total Value</div>
+        </div>
+        <div className="rounded border bg-card px-4 py-2">
+          <div className="text-xl font-semibold">{lobbyStats.activeGames}</div>
+          <div className="font-semibold opacity-60">Active Games</div>
+        </div>
+      </div>
+
+      <div className="mt-4 mb-3 flex flex-col justify-between gap-2 sm:flex-row-reverse">
+        <div className="flex items-center justify-start gap-2">
           <Button type="button" onClick={() => setCreateOpen(true)}>
             Create
           </Button>
@@ -61,28 +60,49 @@ export function CoinFlipLobby() {
             History
           </Button>
         </div>
-      </section>
+        <div>
+          <span className="inline-flex items-center justify-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background data-[state=active]:shadow-sm">
+            MM2
+          </span>
+        </div>
+      </div>
 
-      <section className="grid gap-2" aria-label="Active coinflip games">
+      <div className="flex-1 space-y-2" aria-label="Active coinflip games">
         {openGames.map((game) => (
-          <article
+          <div
             key={game.id}
-            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-border bg-card px-3 py-3 sm:grid-cols-[auto_auto_1fr_auto_auto]"
+            className="flex flex-col items-center justify-between gap-4 rounded border bg-card px-4 py-4 md:flex-row md:py-2"
           >
-            <Avatar player={game.host} />
-            <div className="hidden items-center gap-1.5 sm:flex">
-              {game.items.slice(0, 3).map((item) => (
-                <ItemChip key={item.id} item={item} size="sm" />
-              ))}
-              {game.items.length > 3 ? (
-                <span className="text-xs text-muted-foreground">+{game.items.length - 3}</span>
-              ) : null}
+            <div className="flex items-center gap-4">
+              <Avatar player={game.host} size="lg" className="size-14 border-2" />
+              <span className="mt-2 text-sm font-semibold opacity-50 md:hidden">VS</span>
+              {game.joiner ? (
+                <Avatar player={game.joiner} size="lg" className="size-14 border-2" />
+              ) : (
+                <span className="inline-flex size-[65px] items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
+                  ?
+                </span>
+              )}
             </div>
-            <div className="min-w-0">
-              <ValueGem amount={game.value} />
-              <p className="mt-0.5 text-xs text-muted-foreground">{formatRange(game.rangeMin, game.rangeMax)}</p>
+
+            <div className="grid grid-cols-1 items-center gap-2 lg:grid-cols-2">
+              <div className="flex w-52 items-center justify-center -space-x-4 overflow-hidden md:justify-start">
+                {game.items.slice(0, 4).map((item) => (
+                  <ItemChip key={item.id} item={item} size="lg" />
+                ))}
+                {game.items.length > 4 ? (
+                  <span className="pl-4 text-xs text-white/50">+{game.items.length - 4}</span>
+                ) : null}
+              </div>
+              <div className="hidden lg:block" />
             </div>
-            <div className="col-span-1 flex flex-col gap-1.5 sm:col-auto">
+
+            <div className="flex w-36 flex-col text-center">
+              <ValueGem amount={game.value} className="justify-center text-base font-semibold" />
+              <div className="text-sm opacity-50">{formatRange(game.rangeMin, game.rangeMax)}</div>
+            </div>
+
+            <div className="flex flex-col gap-2">
               {game.status === "open" ? (
                 <Button
                   type="button"
@@ -101,9 +121,9 @@ export function CoinFlipLobby() {
                 View
               </Button>
             </div>
-          </article>
+          </div>
         ))}
-      </section>
+      </div>
 
       <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="max-w-lg">
@@ -118,7 +138,7 @@ export function CoinFlipLobby() {
                   <Avatar player={selected.host} size="lg" />
                   <p className="truncate text-sm font-semibold">{selected.host.name}</p>
                 </div>
-                <p className="text-2xl font-black text-muted-foreground">Vs</p>
+                <p className="text-xl font-semibold text-white/50">Vs</p>
                 <div className="grid justify-items-center gap-2">
                   {selected.joiner ? (
                     <>
@@ -137,22 +157,22 @@ export function CoinFlipLobby() {
               </div>
               <button
                 type="button"
-                className="w-full truncate rounded-md border border-border bg-muted/50 px-3 py-2 font-mono text-xs text-muted-foreground"
+                className="w-full truncate rounded border bg-card px-3 py-2 font-mono text-xs text-white/50"
                 onClick={async () => {
                   await navigator.clipboard?.writeText(selected.hash);
                 }}
               >
                 #{selected.hash}
               </button>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-md border border-border bg-card p-3 text-center">
-                  <p className="text-lg font-bold text-primary">
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded border bg-card p-3 text-center">
+                  <p className="text-lg font-semibold text-primary">
                     {selected.joiner ? "50.00%" : "100.00%"}
                   </p>
                   <ValueGem amount={selected.value} className="mt-1 justify-center" />
                 </div>
-                <div className="rounded-md border border-border bg-card p-3 text-center">
-                  <p className="text-lg font-bold text-muted-foreground">
+                <div className="rounded border bg-card p-3 text-center">
+                  <p className="text-lg font-semibold text-white/50">
                     {selected.joiner ? "50.00%" : "0%"}
                   </p>
                   <ValueGem amount={selected.joiner ? selected.value : 0} muted className="mt-1 justify-center" />
@@ -160,7 +180,7 @@ export function CoinFlipLobby() {
               </div>
               <ul className="mt-3 grid gap-2">
                 {selected.items.map((item) => (
-                  <li key={item.id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2">
+                  <li key={item.id} className="flex items-center gap-3 rounded border bg-card px-4 py-2">
                     <ItemChip item={item} />
                     <span className="flex-1 text-sm font-medium">{item.name}</span>
                     <ValueGem amount={item.value} />
@@ -220,9 +240,9 @@ export function CoinFlipLobby() {
           </SheetHeader>
           <ul className="mt-4 grid gap-2">
             {historyEntries.map((entry) => (
-              <li key={entry.id} className="rounded-md border border-border bg-card px-3 py-3">
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-primary">{entry.mode}</span>
+              <li key={entry.id} className="rounded border bg-card px-4 py-2">
+                <div className="flex items-center justify-between gap-2 text-xs text-white/50">
+                  <span className="font-semibold uppercase text-primary">{entry.mode}</span>
                   <span>{entry.at}</span>
                 </div>
                 <p className="mt-1 text-sm">{entry.summary}</p>

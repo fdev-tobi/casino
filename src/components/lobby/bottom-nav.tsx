@@ -17,38 +17,33 @@ export function BottomNav({
   const homeActive = pathname === "/";
 
   return (
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-[#0d111c]/95 backdrop-blur"
-    >
-      <div className="mx-auto grid h-14 max-w-5xl grid-cols-3">
-        <Link
-          href="/"
-          className={cn(
-            "inline-flex flex-col items-center justify-center gap-0.5 text-xs",
-            homeActive ? "text-primary" : "text-muted-foreground",
-          )}
-        >
-          <Home className="size-5" aria-hidden="true" />
-          Home
-        </Link>
-        <button
-          type="button"
-          onClick={onGames}
-          className="inline-flex flex-col items-center justify-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Gamepad2 className="size-5" aria-hidden="true" />
-          Games
-        </button>
-        <button
-          type="button"
-          onClick={onChat}
-          className="inline-flex flex-col items-center justify-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <MessageCircle className="size-5" aria-hidden="true" />
-          Chat
-        </button>
-      </div>
-    </nav>
+    <div className="fixed bottom-0 left-0 z-30 flex h-20 w-full items-stretch bg-chat xl:hidden">
+      <Link
+        href="/"
+        aria-label="menu"
+        className={cn(
+          "flex flex-1 items-center justify-center border-b-2 text-xl transition",
+          homeActive ? "border-b-primary text-primary" : "border-b-transparent text-white",
+        )}
+      >
+        <Home className="size-5" aria-hidden="true" />
+      </Link>
+      <button
+        type="button"
+        aria-label="games"
+        onClick={onGames}
+        className="flex flex-1 items-center justify-center border-b-2 border-b-transparent text-xl text-white transition"
+      >
+        <Gamepad2 className="size-5" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label="chat"
+        onClick={onChat}
+        className="flex flex-1 items-center justify-center border-b-2 border-b-transparent text-xl text-white transition"
+      >
+        <MessageCircle className="size-5" aria-hidden="true" />
+      </button>
+    </div>
   );
 }

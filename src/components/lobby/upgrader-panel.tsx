@@ -52,16 +52,16 @@ export function UpgraderPanel() {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="flex w-full flex-col gap-3 px-4 pt-3 pb-32">
       <section>
-        <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-[0.14em] uppercase text-primary">
+        <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide uppercase text-primary">
           <span className="size-2 animate-pulse rounded-full bg-primary" aria-hidden="true" />
           Live wins
         </div>
-        <ul className="flex gap-2 overflow-x-auto pb-2">
+        <ul className="flex gap-2 overflow-x-auto pb-1">
           {liveWins.map((win) => (
-            <li key={win.id} className="min-w-[11rem] rounded-lg border border-border bg-card px-3 py-2">
-              <div className="flex items-center gap-2 text-sm font-semibold">
+            <li key={win.id} className="min-w-[11rem] rounded-[4px] border border-border bg-card px-4 py-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
                 <ValueGem amount={win.from} />
                 <span className="text-primary">+{win.gain}</span>
               </div>
@@ -77,38 +77,38 @@ export function UpgraderPanel() {
         </ul>
       </section>
 
-      <section className="grid gap-4 rounded-xl border border-border bg-card p-4 lg:grid-cols-[1fr_1.1fr]">
-        <div className="grid place-items-center py-6">
-          <div className="relative flex size-48 items-center justify-center rounded-full border border-border bg-[#0d111c] sm:size-56">
+      <section className="grid gap-4 rounded border bg-card p-4 lg:grid-cols-[1fr_1.1fr]">
+        <div className="grid place-items-center py-4">
+          <div className="relative flex size-48 items-center justify-center rounded-full border border-border bg-background sm:size-56">
             <div
-              className="absolute inset-0 rounded-full opacity-80"
+              className="absolute inset-0 rounded-full"
               style={{
-                background: `conic-gradient(var(--primary) ${chance * 3.6}deg, rgba(148,163,200,0.12) 0deg)`,
+                background: `conic-gradient(var(--primary) ${chance * 3.6}deg, #22242f 0deg)`,
               }}
             />
-            <div className="absolute inset-4 rounded-full bg-[#0d111c]" />
+            <div className="absolute inset-4 rounded-full bg-background" />
             <div className="relative z-10 text-center">
-              <p className="text-3xl font-black">{chance.toFixed(2)}%</p>
+              <p className="text-3xl font-semibold">{chance.toFixed(2)}%</p>
               <p className="mt-1 max-w-[10rem] text-xs text-muted-foreground">
                 Chance of receiving selected items
               </p>
-              <p className="mt-2 text-sm font-semibold text-primary">Multiplier: {multiplier.toFixed(2)}x</p>
+              <p className="mt-2 text-sm font-medium text-primary">Multiplier: {multiplier.toFixed(2)}x</p>
             </div>
           </div>
-          <div className="mt-4 grid w-full grid-cols-2 gap-3 text-center">
-            <div className="rounded-md border border-border p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Selected total</p>
+          <div className="mt-4 grid w-full grid-cols-2 gap-2 text-center">
+            <div className="rounded-[4px] border border-border bg-card p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected total</p>
               <ValueGem amount={selectedTotal} className="mt-1 justify-center" />
             </div>
-            <div className="rounded-md border border-border p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Desired total</p>
+            <div className="rounded-[4px] border border-border bg-card p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Desired total</p>
               <ValueGem amount={desiredTotal} className="mt-1 justify-center" />
             </div>
           </div>
           <Button type="button" className="mt-4 w-full" onClick={() => setNoticeOpen(true)}>
             Upgrade
           </Button>
-          <div className="mt-3 w-full rounded-md border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground">
+          <div className="mt-3 w-full rounded-[4px] border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground">
             Not logged in
             <p className="mt-1 text-xs">You must be logged in to play upgrader</p>
             <Button type="button" variant="secondary" size="sm" className="mt-2" onClick={() => setLoginNotice(true)}>
@@ -119,7 +119,7 @@ export function UpgraderPanel() {
 
         <div>
           <label className="grid gap-2 text-sm">
-            <span className="text-xs font-semibold tracking-[0.14em] uppercase text-muted-foreground">Select item</span>
+            <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Select item</span>
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -128,7 +128,7 @@ export function UpgraderPanel() {
           </label>
           <div className="mt-3 flex flex-wrap gap-2">
             <select
-              className="h-10 rounded-md border border-input bg-card px-3 text-sm"
+              className="h-10 rounded-[6px] border border-border bg-card px-3 text-sm text-foreground"
               value={sort}
               onChange={(event) => setSort(event.target.value as SortId)}
               aria-label="Sort items"
@@ -137,7 +137,7 @@ export function UpgraderPanel() {
               <option value="low-high">Low - High</option>
               <option value="name">Name</option>
             </select>
-            <span className="inline-flex h-10 items-center rounded-md border border-primary/40 bg-primary/15 px-3 text-xs font-bold tracking-[0.12em] uppercase text-primary">
+            <span className="inline-flex h-10 items-center rounded-[6px] border border-primary bg-primary/10 px-3 text-xs font-semibold tracking-wide uppercase text-primary">
               Murder Mystery 2
             </span>
           </div>
@@ -160,8 +160,8 @@ export function UpgraderPanel() {
                       setDesired(item);
                     }}
                     className={cn(
-                      "flex w-full flex-col items-center gap-2 rounded-lg border bg-muted/30 px-2 py-3 text-center",
-                      isSelected || isDesired ? "border-primary shadow-glow" : "border-border",
+                      "flex w-full flex-col items-center gap-2 rounded-[4px] border bg-card px-2 py-3 text-center",
+                      isSelected || isDesired ? "border-primary" : "border-border",
                     )}
                   >
                     <ItemChip item={item} />

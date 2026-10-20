@@ -28,13 +28,13 @@ function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,36rem)] max-h-[min(85vh,44rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-popover p-5 text-popover-foreground shadow-card sm:p-6",
+          "fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,36rem)] max-h-[min(85vh,44rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[8px] border border-border bg-popover p-4 text-popover-foreground sm:p-5",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-3 right-3 inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+        <DialogPrimitive.Close className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary hover:text-foreground">
           <X aria-hidden="true" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -44,13 +44,13 @@ function DialogContent({
 }
 
 function DialogHeader({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("flex flex-col gap-1.5 pr-10", className)} {...props} />;
+  return <div className={cn("flex flex-col gap-1 pr-10", className)} {...props} />;
 }
 
 function DialogTitle({ className, ...props }: ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn("text-2xl font-bold leading-tight text-foreground", className)}
+      className={cn("text-lg font-semibold leading-tight text-foreground", className)}
       {...props}
     />
   );

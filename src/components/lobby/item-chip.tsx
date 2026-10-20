@@ -15,18 +15,19 @@ export function ItemChip({
   size = "md",
 }: {
   item: Pick<DemoItem, "name" | "tone">;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }) {
+  const dim = size === "sm" ? "h-10 w-10" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
   return (
     <span
       title={item.name}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-gradient-to-br transition hover:border-primary",
         toneClass[item.tone],
-        size === "sm" ? "size-8" : "size-10",
+        dim,
       )}
     >
-      <span className="size-2 rounded-full bg-white/80" />
+      <span className="size-2.5 rounded-full bg-white/80" />
     </span>
   );
 }

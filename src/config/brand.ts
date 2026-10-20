@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
 /**
- * Client brand settings. Logo files live in /public/brand.
- * Theme tokens drive the chroma-inspired dark lobby look.
+ * Adopt Luck = chroma.gg layout fork.
+ * Same surfaces/radii/structure; primary is Adopt Luck blue instead of mint.
  */
 export type BrandConfig = {
   name: string;
@@ -46,9 +46,9 @@ export type BrandConfig = {
     border: string;
     input: string;
     ring: string;
+    nav: string;
+    chat: string;
     radius: string;
-    shadow: string;
-    glow: string;
   };
 };
 
@@ -67,8 +67,8 @@ export const brand: BrandConfig = {
   mark: {
     src: "/brand/mark-transparent.png",
     alt: "Adopt Luck crossed swords",
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
   },
   background: {
     image: null,
@@ -76,28 +76,29 @@ export const brand: BrandConfig = {
     size: "cover",
   },
   theme: {
-    background: "#0b0e16",
-    foreground: "#f4f6fb",
-    card: "#141824",
-    cardForeground: "#f4f6fb",
-    popover: "#1a1f2e",
-    popoverForeground: "#f4f6fb",
+    // chroma.gg surface hex equivalents; primary swapped to Adopt Luck blue
+    background: "#191b24",
+    foreground: "#ffffff",
+    card: "#1e2029",
+    cardForeground: "#ffffff",
+    popover: "#171921",
+    popoverForeground: "#ffffff",
     primary: "#5468f1",
     primaryForeground: "#ffffff",
-    secondary: "#1e2436",
-    secondaryForeground: "#d7ddf0",
-    muted: "#1a2030",
-    mutedForeground: "#97a0b8",
-    accent: "#6d7dff",
+    secondary: "#2f3141",
+    secondaryForeground: "#ffffff",
+    muted: "#2f3141",
+    mutedForeground: "#b3b3b3",
+    accent: "#242632",
     accentForeground: "#ffffff",
-    destructive: "#ef5b6b",
+    destructive: "#ef4444",
     destructiveForeground: "#ffffff",
-    border: "rgba(148, 163, 200, 0.16)",
-    input: "rgba(148, 163, 200, 0.22)",
+    border: "#22242f",
+    input: "#1c1e27",
     ring: "#5468f1",
-    radius: "0.75rem",
-    shadow: "0 18px 40px rgba(0, 0, 0, 0.45)",
-    glow: "0 0 0 1px rgba(84, 104, 241, 0.45), 0 0 28px rgba(84, 104, 241, 0.22)",
+    nav: "#1e2029",
+    chat: "#171921",
+    radius: "0.5rem",
   },
 };
 
@@ -123,9 +124,9 @@ export function brandStyle(): CSSProperties {
     "--border": theme.border,
     "--input": theme.input,
     "--ring": theme.ring,
+    "--nav": theme.nav,
+    "--chat": theme.chat,
     "--radius": theme.radius,
-    "--shadow": theme.shadow,
-    "--glow": theme.glow,
     colorScheme: "dark",
   } as CSSProperties;
 }

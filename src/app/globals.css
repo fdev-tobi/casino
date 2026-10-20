@@ -1,59 +1,70 @@
 @import "tailwindcss";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
 
+/* Explicit hex fallbacks so Tailwind registers color utilities even before runtime vars. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans), "Segoe UI", sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-display: var(--font-geist-sans), "Segoe UI", sans-serif;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --shadow-card: var(--shadow);
-  --shadow-glow: var(--glow);
+  --color-background: #191b24;
+  --color-foreground: #ffffff;
+  --color-card: #1e2029;
+  --color-card-foreground: #ffffff;
+  --color-popover: #171921;
+  --color-popover-foreground: #ffffff;
+  --color-primary: #5468f1;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #2f3141;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #2f3141;
+  --color-muted-foreground: #b3b3b3;
+  --color-accent: #242632;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-border: #22242f;
+  --color-input: #1c1e27;
+  --color-ring: #5468f1;
+  --color-nav: #1e2029;
+  --color-chat: #171921;
+  --default-border-color: #22242f;
+  --font-sans: "Poppins", ui-sans-serif, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+@layer utilities {
+  .border {
+    border-color: var(--border, #22242f);
+  }
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(900px 420px at 12% -8%, rgba(84, 104, 241, 0.22), transparent 55%),
-    radial-gradient(700px 360px at 92% 0%, rgba(109, 125, 255, 0.12), transparent 50%),
-    linear-gradient(180deg, #0f1320 0%, var(--background) 38%);
-  background-attachment: fixed;
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background-color: var(--background, #191b24);
+  color: var(--foreground, #ffffff);
+  font-family: "Poppins", ui-sans-serif, sans-serif !important;
+  font-weight: 400;
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: "Poppins", ui-sans-serif, sans-serif;
+  font-weight: 600;
 }
 
 ::selection {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--primary, #5468f1);
+  color: var(--primary-foreground, #ffffff);
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--ring, #5468f1);
   outline-offset: 2px;
 }

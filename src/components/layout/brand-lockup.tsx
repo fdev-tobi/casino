@@ -13,7 +13,7 @@ export function BrandLockup({ compact = false }: { compact?: boolean }) {
           width={brand.mark.width}
           height={brand.mark.height}
           unoptimized
-          className="drop-shadow-[0_0_12px_rgba(84,104,241,0.55)]"
+          className=""
         />
         <span className="text-sm font-bold tracking-[0.08em] uppercase">{brand.name}</span>
       </Link>
@@ -28,7 +28,7 @@ export function BrandLockup({ compact = false }: { compact?: boolean }) {
         width={brand.logo.width}
         height={brand.logo.height}
         unoptimized
-        className="h-7 w-auto drop-shadow-[0_0_14px_rgba(84,104,241,0.45)] sm:h-8"
+        className="h-7 w-auto sm:h-8"
         priority
       />
       {brand.logo.showWordmark ? (

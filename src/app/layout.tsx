@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/lobby/app-shell";
@@ -19,12 +17,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
-      style={brandStyle()}
-    >
-      <body className="min-h-full bg-background text-foreground">
+    <html lang="en" className="h-full antialiased" style={brandStyle()}>
+      <body className="flex min-h-full flex-col bg-background font-sans text-foreground antialiased">
         <a
           href="#content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-card focus:px-3 focus:py-2"
