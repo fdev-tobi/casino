@@ -376,17 +376,8 @@ export const historyEntries: readonly HistoryEntry[] = [
 /** Default pet used when creating a local demo wager. */
 export const defaultWagerItem: DemoItem = catalogItems[10];
 
-/** Starter pets treated as already deposited for the logged-in demo inventory. */
-export const initialDepositedInventory: readonly DemoItem[] = [
-  catalogItems[10],
-  catalogItems[11],
-  catalogItems[8],
-  catalogItems[9],
-  catalogItems[4],
-  catalogItems[5],
-  catalogItems[6],
-  catalogItems[3],
-];
+/** Create-match inventory starts empty — pets appear after deposit/restock. */
+export const initialDepositedInventory: readonly DemoItem[] = [];
 
 export function getCoinFlipById(id: string): CoinFlipGame | undefined {
   return coinFlipGames.find((game) => game.id === id);

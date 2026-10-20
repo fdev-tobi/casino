@@ -26,7 +26,8 @@ type InventoryContextValue = {
 const InventoryContext = createContext<InventoryContextValue | null>(null);
 
 function storageKey(username: string) {
-  return `adoptluck-inventory:${username.toLowerCase()}`;
+  // v2: empty default inventory (clears older demo-stocked inventories).
+  return `adoptluck-inventory-v2:${username.toLowerCase()}`;
 }
 
 function makeInstance(item: DemoItem, salt: string): DemoItem {

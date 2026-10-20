@@ -1,15 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
+import { Avatar } from "@/components/lobby/avatar";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
+import { UpgraderWheel } from "@/components/lobby/upgrader-wheel";
 import { ValueGem } from "@/components/lobby/value-gem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brand } from "@/config/brand";
 import { liveWins, upgraderItems } from "@/lib/mock-data";
 import type { UpgraderItem } from "@/types/lobby";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,12 @@ export function UpgraderPanel() {
   const [selected, setSelected] = useState<UpgraderItem[]>([]);
   const [desired, setDesired] = useState<UpgraderItem | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [spinning, setSpinning] = useState(false);
+  const [spinWon, setSpinWon] = useState<boolean | null>(null);
+  const [spinToken, setSpinToken] = useState(0);
+  const outcomeRef = useRef<boolean | null>(null);
+  const desiredRef = useRef<UpgraderItem | null>(null);
+  desiredRef.current = desired;
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -44,10 +50,12 @@ export function UpgraderPanel() {
 
   const selectedTotal = sumAmounts(selected);
   const desiredTotal = desired ? getAmount(desired.id, desired.value) : 0;
-  const chance = selectedTotal > 0 && desiredTotal > 0 ? Math.min(99.9, (selectedTotal / desiredTotal) * 100) : 0;
+  const chance =
+    selectedTotal > 0 && desiredTotal > 0 ? Math.min(99.9, (selectedTotal / desiredTotal) * 100) : 0;
   const multiplier = selectedTotal > 0 && desiredTotal > 0 ? desiredTotal / selectedTotal : 0;
 
   function toggleSelected(item: UpgraderItem) {
+    if (spinning) return;
     setSelected((current) =>
       current.some((entry) => entry.id === item.id)
         ? current.filter((entry) => entry.id !== item.id)
@@ -60,12 +68,25 @@ export function UpgraderPanel() {
       openLogin();
       return;
     }
+    if (spinning) return;
     if (!desired || selected.length === 0) {
       setResult("Select items and a target first.");
       return;
     }
     const won = Math.random() * 100 < chance;
-    setResult(won ? `Won ${desired.name}!` : "Upgrade missed — try again.");
+    outcomeRef.current = won;
+    setResult(null);
+    setSpinWon(won);
+    setSpinning(true);
+    setSpinToken((token) => token + 1);
+  }
+
+  function handleSpinEnd() {
+    setSpinning(false);
+    const won = outcomeRef.current;
+    const target = desiredRef.current;
+    if (won === null || !target) return;
+    setResult(won ? `Won ${target.name}!` : "Upgrade missed — try again.");
     if (won) {
       setSelected([]);
     }
@@ -99,22 +120,14 @@ export function UpgraderPanel() {
 
       <section className="grid gap-4 rounded border bg-card p-4 lg:grid-cols-[1fr_1.1fr]">
         <div className="grid place-items-center py-4">
-          <div className="relative flex size-48 items-center justify-center rounded-full border border-border bg-background sm:size-56">
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: `conic-gradient(var(--primary) ${chance * 3.6}deg, #22242f 0deg)`,
-              }}
-            />
-            <div className="absolute inset-4 rounded-full bg-background" />
-            <div className="relative z-10 text-center">
-              <p className="text-3xl font-semibold">{chance.toFixed(2)}%</p>
-              <p className="mt-1 max-w-[10rem] text-xs text-muted-foreground">
-                Chance of receiving selected items
-              </p>
-              <p className="mt-2 text-sm font-medium text-primary">Multiplier: {multiplier.toFixed(2)}x</p>
-            </div>
-          </div>
+          <UpgraderWheel
+            key={spinToken}
+            chance={chance}
+            spinning={spinning}
+            won={spinWon}
+            onSpinEnd={handleSpinEnd}
+          />
+          <p className="mt-3 text-sm font-medium text-primary">Multiplier: {multiplier.toFixed(2)}x</p>
           <div className="mt-4 grid w-full grid-cols-2 gap-2 text-center">
             <div className="rounded-[4px] border border-border bg-card p-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected total</p>
@@ -125,23 +138,33 @@ export function UpgraderPanel() {
               <ValueGem amount={desiredTotal} className="mt-1 justify-center" />
             </div>
           </div>
-          <Button type="button" className="mt-4 w-full" onClick={upgrade}>
-            Upgrade
+          <Button type="button" className="mt-4 w-full" disabled={spinning} onClick={upgrade}>
+            {spinning ? "Spinning…" : "Upgrade"}
           </Button>
           {result ? (
-            <p className="mt-2 text-center text-sm font-semibold text-primary">{result}</p>
+            <p
+              className={cn(
+                "mt-2 text-center text-sm font-semibold",
+                result.startsWith("Won") ? "text-primary" : "text-rose-300",
+              )}
+            >
+              {result}
+            </p>
           ) : null}
           {user ? (
             <div className="mt-3 flex w-full items-center justify-center gap-3 rounded-[4px] border border-border px-3 py-3 text-sm">
-              <Image
-                src={brand.mark.src}
-                alt=""
-                width={32}
-                height={32}
-                unoptimized
-                className="size-8 rounded-full border border-primary bg-card p-0.5"
+              <Avatar
+                player={{
+                  name: user.username,
+                  initials: user.username.slice(0, 2).toUpperCase(),
+                  color: "#5468f1",
+                  robloxUserId: user.userId,
+                  avatarUrl: user.avatarUrl,
+                }}
+                size="sm"
+                className="border border-primary"
               />
-              <span className="font-semibold">{user.username}</span>
+              <span className="font-semibold">{user.displayName || user.username}</span>
             </div>
           ) : (
             <div className="mt-3 w-full rounded-[4px] border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground">
@@ -156,11 +179,14 @@ export function UpgraderPanel() {
 
         <div>
           <label className="grid gap-2 text-sm">
-            <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Select item</span>
+            <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+              Select item
+            </span>
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search for an item.."
+              disabled={spinning}
             />
           </label>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -169,13 +195,14 @@ export function UpgraderPanel() {
               value={sort}
               onChange={(event) => setSort(event.target.value as SortId)}
               aria-label="Sort items"
+              disabled={spinning}
             >
               <option value="high-low">High - Low</option>
               <option value="low-high">Low - High</option>
               <option value="name">Name</option>
             </select>
             <span className="inline-flex h-10 items-center rounded-[6px] border border-primary bg-primary/10 px-3 text-xs font-semibold tracking-wide uppercase text-primary">
-              Murder Mystery 2
+              Adopt Me
             </span>
           </div>
           <ul className="mt-3 grid max-h-[28rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
@@ -186,6 +213,7 @@ export function UpgraderPanel() {
                 <li key={item.id}>
                   <button
                     type="button"
+                    disabled={spinning}
                     onClick={() => {
                       toggleSelected(item);
                       if (!desired) {
@@ -194,16 +222,21 @@ export function UpgraderPanel() {
                     }}
                     onContextMenu={(event) => {
                       event.preventDefault();
-                      setDesired(item);
+                      if (!spinning) setDesired(item);
                     }}
                     className={cn(
-                      "flex w-full flex-col items-center gap-2 rounded-[4px] border bg-card px-2 py-3 text-center",
+                      "flex w-full flex-col items-center gap-2 rounded-[4px] border bg-card px-2 py-3 text-center disabled:opacity-50",
                       isSelected || isDesired ? "border-primary" : "border-border",
                     )}
                   >
                     <ItemChip item={item} />
                     <span className="line-clamp-2 text-xs font-medium">{item.name}</span>
                     <ValueGem amount={item.value} itemId={item.id} className="text-xs" />
+                    {isDesired ? (
+                      <span className="text-[0.65rem] font-bold uppercase tracking-wide text-primary">
+                        Target
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               );
