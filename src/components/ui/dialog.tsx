@@ -21,22 +21,29 @@ function DialogClose(props: ComponentProps<typeof DialogPrimitive.Close>) {
 function DialogContent({
   className,
   children,
+  fullscreen = false,
   ...props
-}: ComponentProps<typeof DialogPrimitive.Content>) {
+}: ComponentProps<typeof DialogPrimitive.Content> & {
+  /** Full-viewport sheet on mobile; centered modal from `sm` up. */
+  fullscreen?: boolean;
+}) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70" />
       <DialogPrimitive.Content
         className={cn(
-          // Mobile: near-bottom sheet so the keyboard / short viewports don't clip content.
-          // Desktop: centered modal.
-          "fixed inset-x-3 bottom-3 z-50 max-h-[min(90dvh,44rem)] w-auto overflow-y-auto overscroll-contain rounded-[8px] border border-border bg-popover p-4 text-popover-foreground sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-[min(100%-1.5rem,36rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-5",
+          "fixed z-50 overflow-y-auto overscroll-contain border border-border bg-popover text-popover-foreground",
+          fullscreen
+            ? // Mobile: true full-screen. Desktop: centered modal.
+              "inset-0 h-dvh max-h-dvh w-full rounded-none p-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[min(90dvh,44rem)] sm:w-[min(100%-1.5rem,36rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[8px] sm:p-5"
+            : // Default: bottom sheet on mobile, centered on desktop.
+              "inset-x-3 bottom-3 max-h-[min(90dvh,44rem)] w-auto rounded-[8px] p-4 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-[min(100%-1.5rem,36rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-5",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary hover:text-foreground">
+        <DialogPrimitive.Close className="absolute top-3 right-3 z-10 inline-flex size-8 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary hover:text-foreground">
           <X aria-hidden="true" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

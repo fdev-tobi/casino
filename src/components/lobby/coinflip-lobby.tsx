@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
+import { CoinFlipCoin } from "@/components/lobby/coinflip-coin";
+import { CoinFlipMatchView } from "@/components/lobby/coinflip-match-view";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
@@ -131,7 +133,7 @@ export function CoinFlipLobby() {
         </div>
         <div>
           <span className="inline-flex items-center justify-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background">
-            MM2
+            Adopt Me
           </span>
         </div>
       </div>
@@ -142,13 +144,16 @@ export function CoinFlipLobby() {
             key={game.id}
             className="flex flex-col items-center justify-between gap-4 rounded border bg-card px-4 py-4 md:flex-row md:py-2"
           >
-            <div className="flex items-center gap-4">
-              <Avatar player={game.host} size="lg" className="size-14 border-2" />
-              <span className="mt-2 text-sm font-semibold opacity-50 md:hidden">VS</span>
+            <div className="relative flex min-w-[12rem] items-center justify-between gap-3 sm:min-w-[14rem]">
+              <Avatar player={game.host} size="lg" className="relative z-10 size-14 border-2" />
+              <CoinFlipCoin
+                spinning={game.status === "full"}
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-12 w-24 -translate-x-1/2 -translate-y-1/2 scale-[0.72]"
+              />
               {game.joiner ? (
-                <Avatar player={game.joiner} size="lg" className="size-14 border-2" />
+                <Avatar player={game.joiner} size="lg" className="relative z-10 size-14 border-2" />
               ) : (
-                <span className="inline-flex size-[65px] items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
+                <span className="relative z-10 inline-flex size-14 items-center justify-center rounded-full border-2 border-dashed border-white/20 text-xs text-white/40">
                   ?
                 </span>
               )}
@@ -199,80 +204,9 @@ export function CoinFlipLobby() {
       </div>
 
       <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent fullscreen className="border-[#22242f] bg-[#121218] sm:max-w-lg">
           {selected ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>CoinFlip match</DialogTitle>
-                <DialogDescription>Match details for {selected.host.name}.</DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2 text-center">
-                <div className="grid justify-items-center gap-2">
-                  <Avatar player={selected.host} size="lg" />
-                  <p className="truncate text-sm font-semibold">{selected.host.name}</p>
-                </div>
-                <p className="text-xl font-semibold text-white/50">Vs</p>
-                <div className="grid justify-items-center gap-2">
-                  {selected.joiner ? (
-                    <>
-                      <Avatar player={selected.joiner} size="lg" />
-                      <p className="truncate text-sm font-semibold">{selected.joiner.name}</p>
-                    </>
-                  ) : (
-                    <>
-                      <span className="inline-flex size-14 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                        ?
-                      </span>
-                      <p className="text-sm text-muted-foreground">Waiting...</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="w-full truncate rounded border bg-card px-3 py-2 font-mono text-xs text-white/50"
-                onClick={async () => {
-                  await navigator.clipboard?.writeText(selected.hash);
-                }}
-              >
-                #{selected.hash}
-              </button>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded border bg-card p-3 text-center">
-                  <p className="text-lg font-semibold text-primary">
-                    {selected.joiner ? "50.00%" : "100.00%"}
-                  </p>
-                  <ValueGem
-                    amount={sumAmounts([...selected.items])}
-                    className="mt-1 justify-center"
-                  />
-                </div>
-                <div className="rounded border bg-card p-3 text-center">
-                  <p className="text-lg font-semibold text-white/50">
-                    {selected.joiner ? "50.00%" : "0%"}
-                  </p>
-                  <ValueGem
-                    amount={selected.joiner ? sumAmounts([...selected.items]) : 0}
-                    muted
-                    className="mt-1 justify-center"
-                  />
-                </div>
-              </div>
-              <ul className="mt-3 grid gap-2">
-                {selected.items.map((item) => (
-                  <li key={item.id} className="flex items-center gap-3 rounded border bg-card px-4 py-2">
-                    <ItemChip item={item} />
-                    <span className="flex-1 text-sm font-medium">{item.name}</span>
-                    <ValueGem amount={item.value} itemId={item.id} />
-                  </li>
-                ))}
-              </ul>
-              {selected.status === "open" ? (
-                <Button type="button" className="mt-2 w-full" onClick={() => joinGame(selected)}>
-                  Join
-                </Button>
-              ) : null}
-            </>
+            <CoinFlipMatchView game={selected} onJoin={() => joinGame(selected)} />
           ) : null}
         </DialogContent>
       </Dialog>
