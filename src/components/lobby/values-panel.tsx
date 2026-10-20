@@ -56,17 +56,17 @@ export function ValuesPanel() {
   const shown = filtered.slice(0, visible);
 
   return (
-    <div className="flex w-full flex-col px-4 pt-3 pb-32">
+    <div className="flex w-full min-w-0 flex-col px-3 pt-3 pb-32 sm:px-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold uppercase tracking-wide">Pet values</h1>
-          <p className="mt-1 text-sm text-white/55">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold uppercase tracking-wide sm:text-2xl">Pet values</h1>
+          <p className="mt-1 break-words text-sm text-white/55">
             {ready
               ? `${items.length.toLocaleString()} display ${unitLabel}s from ${sourceLabel || "catalog"}`
               : "Loading display catalog…"}
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row">
           <Input
             value={query}
             onChange={(event) => {
@@ -74,7 +74,7 @@ export function ValuesPanel() {
               setVisible(PAGE_SIZE);
             }}
             placeholder="Search pets…"
-            className="sm:w-64"
+            className="w-full sm:w-64"
           />
           <select
             value={rarity}
@@ -82,7 +82,7 @@ export function ValuesPanel() {
               setRarity(event.target.value);
               setVisible(PAGE_SIZE);
             }}
-            className="h-10 rounded-md border border-border bg-card px-3 text-sm"
+            className="h-10 w-full rounded-md border border-border bg-card px-3 text-sm sm:w-auto"
             aria-label="Filter by rarity"
           >
             <option value="all">All rarities</option>

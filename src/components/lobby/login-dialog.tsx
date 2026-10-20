@@ -51,20 +51,30 @@ export function LoginDialog() {
   const [copied, setCopied] = useState(false);
   const [phrase, setPhrase] = useState("");
 
+  const trimmedUsername = username.trim();
+  const hasUsername = trimmedUsername.length >= 2;
+  const showPhrase = trimmedUsername.length > 0;
+
   useEffect(() => {
     if (!loginOpen) {
       setUsername("");
       setAgreed(true);
       setCopied(false);
       setPhrase("");
-      return;
     }
-    setPhrase(buildPhrase());
   }, [loginOpen]);
 
-  const canSubmit = username.trim().length >= 2 && agreed;
+  useEffect(() => {
+    if (!loginOpen || !showPhrase) return;
+    if (!phrase) {
+      setPhrase(buildPhrase());
+    }
+  }, [loginOpen, showPhrase, phrase]);
+
+  const canSubmit = hasUsername && agreed && Boolean(phrase);
 
   async function copyPhrase() {
+    if (!phrase) return;
     try {
       await navigator.clipboard.writeText(phrase);
       setCopied(true);
@@ -76,12 +86,14 @@ export function LoginDialog() {
 
   return (
     <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-      <DialogContent className="max-w-md overflow-hidden sm:max-w-lg">
+      <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Welcome to {brand.name.toLowerCase()}</DialogTitle>
+          <DialogTitle className="text-xl font-bold sm:text-2xl">
+            Welcome to {brand.name.toLowerCase()}
+          </DialogTitle>
           <DialogDescription className="text-sm leading-6 text-white/60">
-            By logging in, you acknowledge that you are at least 18 years of age, that any items you wager are
-            not stolen, and that you agree to our Terms of Use.
+            By logging in, you acknowledge that you are at least 18 years of age, that any items you
+            wager are not stolen, and that you agree to our Terms of Use.
           </DialogDescription>
         </DialogHeader>
 
@@ -101,32 +113,38 @@ export function LoginDialog() {
               placeholder="Enter your username..."
               aria-label="Username"
               autoComplete="username"
+              autoFocus
               className="h-11 rounded-lg border-transparent bg-input font-medium"
             />
           </label>
 
-          <div className="grid gap-2">
-            <p className="text-sm text-foreground">
-              Please add the following phrase to your profile&apos;s bio/about me page:
-            </p>
-            <div className="flex items-center gap-2 rounded-lg bg-input px-3 py-3">
-              <code className="min-w-0 flex-1 truncate text-sm font-semibold tracking-wide uppercase text-white/90">
-                {phrase}
-              </code>
-              <button
-                type="button"
-                onClick={copyPhrase}
-                className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-primary transition hover:bg-primary/10"
-                aria-label={copied ? "Copied" : "Copy phrase"}
-              >
-                {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
-              </button>
+          {showPhrase ? (
+            <div className="grid gap-2">
+              <p className="text-sm text-foreground">
+                Please add the following phrase to your profile&apos;s bio/about me page:
+              </p>
+              <div className="flex items-start gap-2 rounded-lg bg-input px-3 py-3">
+                <code className="min-w-0 flex-1 break-words text-sm font-semibold tracking-wide uppercase text-white/90">
+                  {phrase || "Generating…"}
+                </code>
+                <button
+                  type="button"
+                  onClick={copyPhrase}
+                  disabled={!phrase}
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-primary transition hover:bg-primary/10 disabled:opacity-40"
+                  aria-label={copied ? "Copied" : "Copy phrase"}
+                >
+                  {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
+                </button>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-3 text-sm text-red-200">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-300" aria-hidden="true" />
+                <p>We recommend removing this from your profile after you log in</p>
+              </div>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-3 text-sm text-red-200">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-300" aria-hidden="true" />
-              <p>We recommend removing this from your profile after you log in</p>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-white/45">Enter a username to receive your verification phrase.</p>
+          )}
 
           <label className="flex cursor-pointer items-start gap-3 text-sm">
             <span
@@ -151,7 +169,12 @@ export function LoginDialog() {
             </span>
           </label>
 
-          <Button type="submit" size="lg" className="h-12 w-full rounded-full text-base font-bold" disabled={!canSubmit}>
+          <Button
+            type="submit"
+            size="lg"
+            className="h-12 w-full rounded-full text-base font-bold"
+            disabled={!canSubmit}
+          >
             Login
           </Button>
         </form>

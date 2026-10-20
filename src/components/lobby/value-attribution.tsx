@@ -14,8 +14,8 @@ export function ValueAttribution() {
     : null;
 
   return (
-    <div className="rounded border border-border bg-card/60 px-4 py-3 text-xs text-white/55">
-      <p className="font-semibold text-white/75">
+    <div className="rounded border border-border bg-card/60 px-3 py-3 text-xs text-white/55 sm:px-4">
+      <p className="font-semibold break-words text-white/75">
         Display values
         {sourceLabel ? (
           <>
@@ -31,7 +31,7 @@ export function ValueAttribution() {
         ) : null}
         {asOfLabel ? ` · as of ${asOfLabel}` : null}
       </p>
-      <p className="mt-1 leading-5">{disclaimer}</p>
+      <p className="mt-1 leading-5 break-words">{disclaimer}</p>
     </div>
   );
 }

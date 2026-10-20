@@ -28,7 +28,9 @@ function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,36rem)] max-h-[min(85vh,44rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[8px] border border-border bg-popover p-4 text-popover-foreground sm:p-5",
+          // Mobile: near-bottom sheet so the keyboard / short viewports don't clip content.
+          // Desktop: centered modal.
+          "fixed inset-x-3 bottom-3 z-50 max-h-[min(90dvh,44rem)] w-auto overflow-y-auto overscroll-contain rounded-[8px] border border-border bg-popover p-4 text-popover-foreground sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-[min(100%-1.5rem,36rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-5",
           className,
         )}
         {...props}

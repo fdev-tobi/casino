@@ -24,17 +24,17 @@ const modeIcon: Record<(typeof gameModes)[number]["id"], ComponentType<SVGProps<
 function BrandMark() {
   return (
     <Link href="/" aria-label={brand.name}>
-      <div className="flex h-fit items-center gap-3">
+      <div className="flex h-fit min-w-0 items-center gap-2 sm:gap-3">
         <Image
           src={brand.mark.src}
           alt=""
           width={brand.mark.width}
           height={brand.mark.height}
           unoptimized
-          className="size-[30px]"
+          className="size-[28px] shrink-0 sm:size-[30px]"
         />
-        <div className="h-[30px] w-[2px] bg-white" />
-        <span className="text-lg font-bold uppercase">{brand.name}</span>
+        <div className="hidden h-[30px] w-[2px] bg-white sm:block" />
+        <span className="truncate text-base font-bold uppercase sm:text-lg">{brand.name}</span>
       </div>
     </Link>
   );
@@ -44,27 +44,29 @@ function AuthControls() {
   const { user, openLogin, logout } = useAuth();
 
   return (
-    <div className="flex items-center gap-3" suppressHydrationWarning>
+    <div className="flex shrink-0 items-center gap-2 sm:gap-3" suppressHydrationWarning>
       {user ? (
         <>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <Image
               src={brand.mark.src}
               alt=""
               width={36}
               height={36}
               unoptimized
-              className="size-9 rounded-full border-2 border-primary bg-card object-cover p-0.5"
+              className="size-8 shrink-0 rounded-full border-2 border-primary bg-card object-cover p-0.5 sm:size-9"
             />
-            <span className="hidden max-w-[9rem] truncate text-sm font-semibold sm:inline">{user.username}</span>
+            <span className="hidden max-w-[7rem] truncate text-sm font-semibold sm:inline md:max-w-[9rem]">
+              {user.username}
+            </span>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={logout} className="gap-1.5">
+          <Button type="button" variant="secondary" size="sm" onClick={logout} className="gap-1.5 px-3">
             <LogOut aria-hidden="true" />
-            Logout
+            <span className="sr-only sm:not-sr-only">Logout</span>
           </Button>
         </>
       ) : (
-        <Button type="button" size="lg" onClick={openLogin} className="gap-2">
+        <Button type="button" size="sm" onClick={openLogin} className="h-10 gap-2 px-4 sm:h-11 sm:px-6">
           <LogIn aria-hidden="true" />
           Login
         </Button>
@@ -77,8 +79,8 @@ export function TopHeader() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed z-40 flex h-20 w-full items-center justify-between border-b bg-nav px-8">
-      <div className="hidden items-center gap-16 xl:flex">
+    <nav className="fixed z-40 flex h-16 w-full items-center justify-between border-b bg-nav px-3 sm:h-20 sm:px-6 xl:px-8">
+      <div className="hidden items-center gap-8 xl:flex 2xl:gap-16">
         <BrandMark />
         <ul className="flex items-center gap-0 text-sm">
           {gameModes.map((mode) => {
@@ -89,12 +91,12 @@ export function TopHeader() {
                 <Link
                   href={mode.href}
                   className={cn(
-                    "relative flex h-20 items-center gap-2 border-b-2 border-b-transparent px-6 text-sm font-semibold uppercase text-white/60 transition hover:opacity-80",
+                    "relative flex h-20 items-center gap-2 border-b-2 border-b-transparent px-3 text-sm font-semibold uppercase text-white/60 transition hover:opacity-80 2xl:px-6",
                     active && "border-b-white/10 text-white",
                   )}
                 >
-                  <Icon className="size-4" aria-hidden="true" />
-                  {mode.label}
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="whitespace-nowrap">{mode.label}</span>
                 </Link>
               </li>
             );
@@ -106,7 +108,7 @@ export function TopHeader() {
         <AuthControls />
       </div>
 
-      <div className="flex w-full items-center justify-between xl:hidden">
+      <div className="flex w-full min-w-0 items-center justify-between gap-3 xl:hidden">
         <BrandMark />
         <AuthControls />
       </div>

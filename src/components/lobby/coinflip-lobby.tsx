@@ -96,7 +96,7 @@ export function CoinFlipLobby() {
   }
 
   return (
-    <div className="flex w-full flex-col px-4 pt-3 pb-32">
+    <div className="flex w-full min-w-0 flex-col px-3 pt-3 pb-32 sm:px-4">
       {joinedToast ? (
         <div className="mb-3 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
           {joinedToast}

@@ -32,18 +32,18 @@ function ShellInner({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col">
       <TopHeader />
 
-      <div className="mt-20 flex flex-1 overflow-auto">
+      <div className="mt-16 flex min-h-0 flex-1 overflow-auto sm:mt-20">
         <ChatPanel className="hidden w-1/4 min-w-[22rem] flex-col gap-2 bg-chat px-3 pt-3 xl:flex" />
 
-        <div className="flex w-full flex-col overflow-auto">
+        <div className="flex w-full min-w-0 flex-col overflow-auto">
           <StatusBanner />
-          <div className="px-4 pb-1">
+          <div className="px-3 pb-1 sm:px-4">
             <ValueAttribution />
           </div>
-          <main id="content" className="flex-1">
+          <main id="content" className="min-w-0 flex-1">
             {children}
           </main>
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 p-3 text-sm text-white/40">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 p-3 pb-24 text-center text-xs text-white/40 sm:text-sm xl:pb-3">
             <span>{brand.name} is not affiliated with ROBLOX corporation.</span>
             {footerLegal.map((item) => (
               <Link key={item.href} href={item.href} className="hover:text-white/70">
