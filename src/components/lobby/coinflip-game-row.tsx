@@ -12,11 +12,13 @@ export function CoinFlipGameRow({
   game,
   onJoin,
   onView,
+  onCancel,
   showJoin = true,
 }: {
   game: CoinFlipGame;
   onJoin?: () => void;
   onView: () => void;
+  onCancel?: () => void;
   showJoin?: boolean;
 }) {
   const { sumAmounts } = useDisplayValues();
@@ -64,6 +66,11 @@ export function CoinFlipGameRow({
         {showJoin && game.status === "open" && onJoin ? (
           <Button type="button" size="sm" onClick={onJoin}>
             Join
+          </Button>
+        ) : null}
+        {onCancel && game.status === "open" && !game.joiner ? (
+          <Button type="button" size="sm" variant="secondary" onClick={onCancel}>
+            Cancel
           </Button>
         ) : null}
         <Button type="button" size="sm" variant="secondary" onClick={onView}>

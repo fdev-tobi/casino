@@ -12,26 +12,37 @@ const FLIP_STEPS = 68;
 /** Horizontal strip: 68 steps × 400px. */
 const END_OFFSET_PX = -27_200;
 
+/**
+ * Resting art size differs per sheet (heads last frame is larger than tails).
+ * Scale each side so the final face matches BOX_PX.
+ */
+const END_ART_PX: Record<CoinSide, number> = {
+  heads: 158,
+  tails: 130,
+};
+
+const BOX_PX = {
+  sm: 64,
+  md: 112,
+  lg: 120,
+} as const;
+
 const SHEET: Record<CoinSide, string> = {
   heads: "/sprites/heads.png",
   tails: "/sprites/tails.png",
 };
 
-const MEDALLION: Record<CoinSide, string> = {
-  heads: "/sprites/coin-heads.png",
-  tails: "/sprites/coin-tails.png",
-};
-
 const sizeClass = {
-  sm: "h-16 w-16 [--cf-coin-scale:0.2]",
-  md: "h-40 w-40 [--cf-coin-scale:0.4] sm:h-56 sm:w-56 sm:[--cf-coin-scale:0.56]",
-  /** Match view — large coin between seats. */
-  lg: "h-56 w-56 [--cf-coin-scale:0.56] sm:h-72 sm:w-72 sm:[--cf-coin-scale:0.72]",
+  sm: "h-16 w-16",
+  md: "h-28 w-28",
+  /** Match modal — same visual size for heads and tails end frames. */
+  lg: "h-[7.5rem] w-[7.5rem]",
 } as const;
 
 /**
  * Sprite-sheet coin between match seats.
- * After the flip, the last animation frame stays on screen (no H/T medallion swap).
+ * Only mounted once both players have joined and a flip has started.
+ * After the flip, the last animation frame stays on screen.
  */
 export function CoinFlipCoin({
   spinning = false,
@@ -64,26 +75,8 @@ export function CoinFlipCoin({
 
   const elapsed = flipStartedAt ? Math.max(0, now - flipStartedAt) : 0;
   const isFlipping = Boolean(spinning && flipStartedAt && elapsed < COIN_FLIP_DURATION_MS);
-  const showEnd = Boolean(spinning && flipStartedAt && elapsed >= COIN_FLIP_DURATION_MS);
-
-  // Waiting for a join: medallion only. Once a flip runs, stay on the sprite
-  // (including the final frame after it stops).
-  if (!isFlipping && !showEnd) {
-    return (
-      <span
-        className={cn("relative block shrink-0 overflow-visible", sizeClass[size], className)}
-        aria-hidden="true"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={MEDALLION[resultSide]}
-          alt=""
-          className="size-full object-contain"
-          draggable={false}
-        />
-      </span>
-    );
-  }
+  const showEnd = Boolean(flipStartedAt && elapsed >= COIN_FLIP_DURATION_MS);
+  const scale = BOX_PX[size] / END_ART_PX[resultSide];
 
   const style: CSSProperties = {
     position: "absolute",
@@ -94,8 +87,8 @@ export function CoinFlipCoin({
     height: FRAME_PX,
     backgroundImage: `url("${SHEET[resultSide]}")`,
     backgroundRepeat: "no-repeat",
-    backgroundPosition: showEnd ? `${END_OFFSET_PX}px 0` : "0 0",
-    transform: "translate(-50%, -50%) scale(var(--cf-coin-scale, 0.56))",
+    backgroundPosition: showEnd || !isFlipping ? `${END_OFFSET_PX}px 0` : "0 0",
+    transform: `translate(-50%, -50%) scale(${scale})`,
   };
 
   if (isFlipping) {

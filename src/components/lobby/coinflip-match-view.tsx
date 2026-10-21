@@ -102,12 +102,17 @@ function ItemsCard({ items, muted = false }: { items: readonly DemoItem[]; muted
 export function CoinFlipMatchView({
   game,
   onJoin,
+  onCancel,
   canJoin = true,
+  canCancel = false,
   onFlipSettled,
 }: {
   game: CoinFlipGame;
   onJoin: () => void;
+  onCancel?: () => void;
   canJoin?: boolean;
+  /** Host can cancel an open match with no joiner. */
+  canCancel?: boolean;
   /** Fires once after the join-started flip animation finishes. */
   onFlipSettled?: (game: CoinFlipGame) => void;
 }) {
@@ -192,17 +197,21 @@ export function CoinFlipMatchView({
         </div>
       </div>
 
-      <div className="relative mt-2 flex min-h-[16rem] flex-1 items-center justify-between gap-2 overflow-visible px-1 py-16 sm:min-h-[20rem] sm:px-3 sm:py-20">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-1 sm:mt-8 sm:gap-3 sm:px-2">
         <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 justify-center overflow-visible">
-          <CoinFlipCoin
-            key={`${game.flipStartedAt ?? "idle"}-${game.winnerSide ?? "heads"}`}
-            size="lg"
-            spinning={spinning}
-            flipStartedAt={game.flipStartedAt ?? null}
-            resultSide={game.winnerSide ?? "heads"}
-          />
-        </div>
+        {hasJoiner && game.flipStartedAt ? (
+          <div className="relative z-20 flex shrink-0 items-center justify-center overflow-visible">
+            <CoinFlipCoin
+              key={`${game.flipStartedAt}-${game.winnerSide ?? "heads"}`}
+              size="lg"
+              spinning={spinning}
+              flipStartedAt={game.flipStartedAt}
+              resultSide={game.winnerSide ?? "heads"}
+            />
+          </div>
+        ) : (
+          <span className="px-2 text-sm font-bold tracking-wide text-white/35">VS</span>
+        )}
         <PlayerColumn player={rightPlayer} side="tails" waiting={rightWaiting} />
       </div>
 
@@ -228,6 +237,18 @@ export function CoinFlipMatchView({
         <Button type="button" className="mt-4 h-11 w-full rounded-full text-base font-bold" onClick={onJoin}>
           Join match
         </Button>
+      ) : game.status === "open" && canCancel && onCancel ? (
+        <div className="mt-4 grid gap-2">
+          <p className="text-center text-sm font-semibold text-white/45">You created this match</p>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-11 w-full rounded-full text-base font-bold"
+            onClick={onCancel}
+          >
+            Cancel match
+          </Button>
+        </div>
       ) : game.status === "open" && !canJoin ? (
         <p className="mt-4 text-center text-sm font-semibold text-white/45">You created this match</p>
       ) : game.winnerSide && flipDone ? (

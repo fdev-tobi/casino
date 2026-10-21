@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { COIN_FLIP_DURATION_MS } from "@/components/lobby/coinflip-coin";
@@ -20,13 +20,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { coinFlipGames, lobbyStats } from "@/lib/mock-data";
+import {
+  COINFLIP_GAMES_STORAGE_KEY,
+  loadCoinFlipGames,
+  loadCreditedFlipIds,
+  saveCoinFlipGames,
+  saveCreditedFlipIds,
+} from "@/lib/coinflip-storage";
+import { lobbyStats } from "@/lib/mock-data";
 import type { CoinFlipGame, CoinSide, DemoItem, DemoPlayer } from "@/types/lobby";
-
-function flipInProgress(flipStartedAt: number | null | undefined): boolean {
-  if (typeof flipStartedAt !== "number") return false;
-  return Date.now() - flipStartedAt < COIN_FLIP_DURATION_MS;
-}
 
 function userAsPlayer(
   username: string,
@@ -48,23 +50,59 @@ function isUserInGame(game: CoinFlipGame, username: string): boolean {
   return game.host.name.toLowerCase() === key || game.joiner?.name.toLowerCase() === key;
 }
 
+function flipInProgress(flipStartedAt: number | null | undefined): boolean {
+  if (typeof flipStartedAt !== "number") return false;
+  return Date.now() - flipStartedAt < COIN_FLIP_DURATION_MS;
+}
+
+/** Arm / replay the flip so View and live joins both show the animation. */
+function withLiveFlip(game: CoinFlipGame): CoinFlipGame {
+  if (!game.joiner || game.status === "ended") return game;
+  if (flipInProgress(game.flipStartedAt)) return game;
+  return {
+    ...game,
+    status: "full",
+    flipStartedAt: Date.now(),
+    winnerSide: game.winnerSide ?? (Math.random() < 0.5 ? "heads" : "tails"),
+  };
+}
+
 export function CoinFlipLobby() {
   const { user, openLogin } = useAuth();
   const { removeByIds, depositMany } = useInventory();
   const { openWallet } = useWallet();
-  const [games, setGames] = useState(() =>
-    coinFlipGames.map((game) => ({
-      ...game,
-      joinerItems: game.joinerItems ?? [],
-    })),
-  );
+  const [games, setGames] = useState<CoinFlipGame[]>([]);
+  const [gamesReady, setGamesReady] = useState(false);
   /** Track by id so View stays live when the match updates (join / flip). */
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinTarget, setJoinTarget] = useState<CoinFlipGame | null>(null);
+  /** Open join picker after match/login dialogs finish closing. */
+  const [pendingJoinId, setPendingJoinId] = useState<string | null>(null);
   const [joinedToast, setJoinedToast] = useState<string | null>(null);
   const creditedFlips = useRef(new Set<string>());
+
+  useEffect(() => {
+    setGames(loadCoinFlipGames());
+    creditedFlips.current = loadCreditedFlipIds();
+    setGamesReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!gamesReady) return;
+    saveCoinFlipGames(games);
+  }, [games, gamesReady]);
+
+  // Other tabs (e.g. host watching while joiner plays) pick up joins live.
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.key !== COINFLIP_GAMES_STORAGE_KEY) return;
+      setGames(loadCoinFlipGames());
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const selected = useMemo(
     () => (selectedId ? (games.find((game) => game.id === selectedId) ?? null) : null),
@@ -73,22 +111,33 @@ export function CoinFlipLobby() {
 
   function openMatch(game: CoinFlipGame) {
     setSelectedId(game.id);
-
-    // Full match: play the flip in View. If a join just started the flip, catch up
-    // mid-animation; otherwise begin now so the viewer actually sees it.
-    setGames((list) =>
-      list.map((entry) => {
-        if (entry.id !== game.id || entry.status !== "full") return entry;
-        if (flipInProgress(entry.flipStartedAt)) return entry;
-        return {
-          ...entry,
-          flipStartedAt: Date.now(),
-          // Fresh outcome each replay so the sprite sheet and label stay in sync.
-          winnerSide: Math.random() < 0.5 ? "heads" : "tails",
-        };
-      }),
-    );
+    // Filled match (both players): start / replay the flip when opening View.
+    if (game.joiner && game.status !== "ended") {
+      setGames((list) =>
+        list.map((entry) => (entry.id === game.id ? withLiveFlip(entry) : entry)),
+      );
+    }
   }
+
+  // Resume join after login, or after the match modal closes (avoids nested dialogs).
+  useEffect(() => {
+    if (!pendingJoinId || selectedId !== null || joinTarget !== null || !user) return;
+    const game = games.find((entry) => entry.id === pendingJoinId);
+    if (!game || game.status !== "open" || game.joiner) {
+      setPendingJoinId(null);
+      setJoinedToast("This match is no longer open");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+    if (game.host.name.toLowerCase() === user.username.toLowerCase()) {
+      setPendingJoinId(null);
+      setJoinedToast("You can't join your own match");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+    setJoinTarget(game);
+    setPendingJoinId(null);
+  }, [pendingJoinId, selectedId, joinTarget, user, games]);
 
   const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
 
@@ -99,36 +148,33 @@ export function CoinFlipLobby() {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [games, user]);
 
-  function requireUser() {
-    if (!user) {
-      openLogin();
-      return null;
-    }
-    return user;
-  }
-
   function requestJoin(game: CoinFlipGame) {
-    const current = requireUser();
-    if (!current) return;
-    if (game.host.name.toLowerCase() === current.username.toLowerCase()) {
-      setJoinedToast("You can't join your own match");
-      window.setTimeout(() => setJoinedToast(null), 2000);
-      return;
-    }
     if (game.status !== "open" || game.joiner) {
       setJoinedToast("This match is no longer open");
       window.setTimeout(() => setJoinedToast(null), 2000);
       return;
     }
-    setJoinTarget(game);
+    if (user && game.host.name.toLowerCase() === user.username.toLowerCase()) {
+      setJoinedToast("You can't join your own match");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+    // Close match modal first, then open the pet picker (or login).
+    setSelectedId(null);
+    setJoinTarget(null);
+    setPendingJoinId(game.id);
+    if (!user) openLogin();
   }
 
   function confirmJoin(items: DemoItem[]) {
-    const current = requireUser();
+    if (!user) {
+      openLogin();
+      return;
+    }
     const game = joinTarget;
-    if (!current || !game || items.length === 0) return;
+    if (!game || items.length === 0) return;
 
-    const joiner = userAsPlayer(current.username, current.userId, current.avatarUrl);
+    const joiner = userAsPlayer(user.username, user.userId, user.avatarUrl);
     const flipStartedAt = Date.now();
     const winnerSide: CoinSide = Math.random() < 0.5 ? "heads" : "tails";
 
@@ -144,15 +190,18 @@ export function CoinFlipLobby() {
     removeByIds(items.map((item) => item.id));
     setGames((list) => list.map((entry) => (entry.id === game.id ? updated : entry)));
     setJoinTarget(null);
+    setPendingJoinId(null);
     setSelectedId(game.id);
     setJoinedToast(`Joined ${game.host.name}'s match — flipping!`);
     window.setTimeout(() => setJoinedToast(null), 2000);
   }
 
   function createMatch(payload: { items: DemoItem[]; side: CoinSide }) {
-    const current = requireUser();
-    if (!current || payload.items.length === 0) return;
-    const host = userAsPlayer(current.username, current.userId, current.avatarUrl);
+    if (!user || payload.items.length === 0) {
+      if (!user) openLogin();
+      return;
+    }
+    const host = userAsPlayer(user.username, user.userId, user.avatarUrl);
     const value = payload.items.reduce((sum, item) => sum + item.value, 0);
     const created: CoinFlipGame = {
       id: `cf-local-${Date.now()}`,
@@ -174,8 +223,36 @@ export function CoinFlipLobby() {
     removeByIds(payload.items.map((item) => item.id));
     setGames((list) => [created, ...list]);
     setCreateOpen(false);
-    setJoinedToast("Match created");
+    // Keep host on the match modal so a join (other tab) starts the flip live.
+    setSelectedId(created.id);
+    setJoinedToast("Match created — waiting for a joiner");
     window.setTimeout(() => setJoinedToast(null), 2000);
+  }
+
+  function cancelMatch(game: CoinFlipGame) {
+    if (!user) {
+      openLogin();
+      return;
+    }
+    const current = user;
+    if (game.status !== "open" || game.joiner) {
+      setJoinedToast("This match can no longer be cancelled");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+    if (game.host.name.toLowerCase() !== current.username.toLowerCase()) {
+      setJoinedToast("Only the host can cancel this match");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+
+    if (game.items.length > 0) {
+      depositMany([...game.items]);
+    }
+    setGames((list) => list.filter((entry) => entry.id !== game.id));
+    if (selectedId === game.id) setSelectedId(null);
+    setJoinedToast("Match cancelled — pets returned to your wallet");
+    window.setTimeout(() => setJoinedToast(null), 2500);
   }
 
   function handleFlipSettled(game: CoinFlipGame) {
@@ -186,6 +263,7 @@ export function CoinFlipLobby() {
     if (!userPlayed) return;
 
     creditedFlips.current.add(game.id);
+    saveCreditedFlipIds(creditedFlips.current);
     setGames((list) =>
       list.map((entry) => (entry.id === game.id ? { ...entry, status: "ended" as const } : entry)),
     );
@@ -247,19 +325,28 @@ export function CoinFlipLobby() {
       </div>
 
       <div className="flex-1 space-y-2" aria-label="Active coinflip games">
-        {openGames.map((game) => {
-          const isOwn =
-            !!user && game.host.name.toLowerCase() === user.username.toLowerCase();
-          return (
-            <CoinFlipGameRow
-              key={game.id}
-              game={game}
-              showJoin={!isOwn && game.status === "open"}
-              onJoin={() => requestJoin(game)}
-              onView={() => openMatch(game)}
-            />
-          );
-        })}
+        {!gamesReady ? (
+          <p className="py-8 text-center text-sm text-white/45">Loading matches…</p>
+        ) : (
+          openGames.map((game) => {
+            const isOwn =
+              !!user && game.host.name.toLowerCase() === user.username.toLowerCase();
+            return (
+              <CoinFlipGameRow
+                key={game.id}
+                game={game}
+                showJoin={!isOwn && game.status === "open"}
+                onJoin={() => requestJoin(game)}
+                onView={() => openMatch(game)}
+                onCancel={
+                  isOwn && game.status === "open" && !game.joiner
+                    ? () => cancelMatch(game)
+                    : undefined
+                }
+              />
+            );
+          })
+        )}
       </div>
 
       <Dialog open={selectedId !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
@@ -268,9 +355,18 @@ export function CoinFlipLobby() {
             <CoinFlipMatchView
               game={selected}
               canJoin={
-                !user || selected.host.name.toLowerCase() !== user.username.toLowerCase()
+                selected.status === "open" &&
+                !selected.joiner &&
+                (!user || selected.host.name.toLowerCase() !== user.username.toLowerCase())
+              }
+              canCancel={
+                !!user &&
+                selected.status === "open" &&
+                !selected.joiner &&
+                selected.host.name.toLowerCase() === user.username.toLowerCase()
               }
               onJoin={() => requestJoin(selected)}
+              onCancel={() => cancelMatch(selected)}
               onFlipSettled={handleFlipSettled}
             />
           ) : null}
@@ -318,17 +414,26 @@ export function CoinFlipLobby() {
                 </p>
               </div>
             ) : (
-              myHistory.map((game) => (
-                <CoinFlipGameRow
-                  key={game.id}
-                  game={game}
-                  showJoin={false}
-                  onView={() => {
-                    setHistoryOpen(false);
-                    openMatch(game);
-                  }}
-                />
-              ))
+              myHistory.map((game) => {
+                const isOwn =
+                  !!user && game.host.name.toLowerCase() === user.username.toLowerCase();
+                return (
+                  <CoinFlipGameRow
+                    key={game.id}
+                    game={game}
+                    showJoin={false}
+                    onView={() => {
+                      setHistoryOpen(false);
+                      openMatch(game);
+                    }}
+                    onCancel={
+                      isOwn && game.status === "open" && !game.joiner
+                        ? () => cancelMatch(game)
+                        : undefined
+                    }
+                  />
+                );
+              })
             )}
           </div>
         </SheetContent>
