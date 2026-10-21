@@ -22,23 +22,36 @@ function normalizeDeg(value: number): number {
   return ((value % 360) + 360) % 360;
 }
 
-/** Whether `angle` (0–360 from top, CW) sits inside the win arc. */
-export function isAngleInWinZone(angle: number, offset: number, winDegrees: number): boolean {
+/**
+ * Whether the fixed top pointer (angle 0) sits inside the win arc after `offset`
+ * rotation of the wheel. Arc is `[offset, offset + winDegrees)` clockwise from top.
+ */
+export function isPointerInWinZone(offset: number, winDegrees: number): boolean {
   const span = Math.max(0, Math.min(360, winDegrees));
   if (span <= 0) return false;
   if (span >= 360) return true;
-  const a = normalizeDeg(angle);
-  const start = normalizeDeg(offset);
-  const end = start + span;
-  if (end <= 360) {
-    return a >= start && a < end;
-  }
-  // Wraps past 360°.
-  return a >= start || a < end - 360;
+  // Distance clockwise from zone start to the pointer at 0°.
+  const intoZone = normalizeDeg(0 - offset);
+  return intoZone < span;
 }
 
-function winZoneBackground(offset: number, winDegrees: number): string {
-  const start = normalizeDeg(offset);
+/** Pick a final wheel offset so the top pointer is inside (win) or outside (miss) the blue arc. */
+function offsetForOutcome(wantWin: boolean, winDegrees: number): number {
+  const span = Math.max(0, Math.min(360, winDegrees));
+  if (span <= 0) return Math.random() * 360;
+  if (span >= 360) return Math.random() * 360;
+  if (wantWin) {
+    // Pointer at 0 is `t` degrees into the zone ⇒ offset = -t.
+    const t = Math.random() * span;
+    return normalizeDeg(-t);
+  }
+  const loseSpan = 360 - span;
+  // Zone starts just after 0 so 0 is outside: offset ∈ (0, loseSpan].
+  const t = Math.random() * loseSpan;
+  return normalizeDeg(t + 0.0001);
+}
+
+function winZoneBackground(winDegrees: number): string {
   const span = Math.max(0, Math.min(360, winDegrees));
   const lose = "#2a2d3a";
   const win = "var(--primary)";
@@ -50,13 +63,9 @@ function winZoneBackground(offset: number, winDegrees: number): string {
     return `conic-gradient(from -90deg, ${win} 0deg 360deg)`;
   }
 
-  const end = start + span;
-  if (end <= 360) {
-    return `conic-gradient(from -90deg, ${lose} 0deg ${start}deg, ${win} ${start}deg ${end}deg, ${lose} ${end}deg 360deg)`;
-  }
-
-  const wrapEnd = end - 360;
-  return `conic-gradient(from -90deg, ${win} 0deg ${wrapEnd}deg, ${lose} ${wrapEnd}deg ${start}deg, ${win} ${start}deg 360deg)`;
+  // Zone painted from 0° (top) clockwise for `span` degrees in local wheel space.
+  // The whole layer is rotated by `wheelAngle`, so aiming + spin move the blue arc.
+  return `conic-gradient(from -90deg, ${win} 0deg ${span}deg, ${lose} ${span}deg 360deg)`;
 }
 
 export function UpgraderWheel({
@@ -70,7 +79,7 @@ export function UpgraderWheel({
   spinning: boolean;
   /** Increments each upgrade so consecutive spins re-run. */
   spinKey?: number;
-  /** Called after the marker fully stops. `won` matches the visual land zone. */
+  /** Called after the wheel fully stops. `won` = pointer over blue. */
   onSpinEnd?: (won: boolean) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -79,23 +88,35 @@ export function UpgraderWheel({
   const onSpinEndRef = useRef(onSpinEnd);
   onSpinEndRef.current = onSpinEnd;
 
-  const [zoneOffset, setZoneOffset] = useState(0);
-  const zoneOffsetRef = useRef(0);
-  zoneOffsetRef.current = zoneOffset;
+  /** Aim rotation of the wheel (blue arc start angle from top, CW). */
+  const [aimOffset, setAimOffset] = useState(0);
+  const aimOffsetRef = useRef(0);
+  aimOffsetRef.current = aimOffset;
 
-  const [markerAngle, setMarkerAngle] = useState(0);
-  const markerAngleRef = useRef(0);
-  markerAngleRef.current = markerAngle;
+  /** Absolute wheel rotation including spin turns (for CSS transform). */
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const wheelAngleRef = useRef(0);
+  wheelAngleRef.current = wheelAngle;
 
-  const [markerTransition, setMarkerTransition] = useState<string>("none");
+  const [wheelTransition, setWheelTransition] = useState<string>("none");
   const [settled, setSettled] = useState(false);
   const [displayWon, setDisplayWon] = useState<boolean | null>(null);
 
   const winDegrees = Math.max(0, Math.min(100, chance)) * 3.6;
   const winDegreesRef = useRef(winDegrees);
   winDegreesRef.current = winDegrees;
+  const chanceRef = useRef(chance);
+  chanceRef.current = chance;
 
-  // Document-level move/up so aim works on desktop + mobile even if the pointer leaves the wheel.
+  // Keep wheelAngle aligned with aim while idle so drag feels direct.
+  useEffect(() => {
+    if (spinning) return;
+    setWheelTransition("none");
+    setWheelAngle(aimOffset);
+    wheelAngleRef.current = aimOffset;
+  }, [aimOffset, spinning]);
+
+  // Document-level move/up so aim works even if the pointer leaves the wheel.
   useEffect(() => {
     function onMove(event: PointerEvent) {
       if (!dragging.current || spinning) return;
@@ -110,7 +131,7 @@ export function UpgraderWheel({
       if (delta > 180) delta -= 360;
       if (delta < -180) delta += 360;
       lastPointerAngle.current = angle;
-      setZoneOffset((value) => normalizeDeg(value + delta));
+      setAimOffset((value) => normalizeDeg(value + delta));
     }
 
     function onUp() {
@@ -140,34 +161,44 @@ export function UpgraderWheel({
     }
   }
 
-  // Spin: land somewhere random, then derive won from the visual zone (no mismatch).
+  // Spin the wheel under a fixed top pointer. Outcome matches blue-under-pointer.
   useEffect(() => {
     if (!spinning) return;
 
     setSettled(false);
     setDisplayWon(null);
-    setMarkerTransition("none");
+    setWheelTransition("none");
 
-    const offset = zoneOffsetRef.current;
     const span = winDegreesRef.current;
-    const landAt = Math.random() * 360;
-    const won = isAngleInWinZone(landAt, offset, span);
+    const rolledWin = Math.random() * 100 < chanceRef.current;
+    const finalOffset = offsetForOutcome(rolledWin, span);
+    // Geometry is source of truth so the label always matches blue-under-pointer.
+    const outcome = isPointerInWinZone(finalOffset, span);
 
-    const current = normalizeDeg(markerAngleRef.current);
+    const current = wheelAngleRef.current;
     const turns = 6 + Math.floor(Math.random() * 2);
-    let delta = normalizeDeg(landAt - current);
+    let delta = normalizeDeg(finalOffset - normalizeDeg(current));
     if (delta < 45) delta += 360;
-    const next = markerAngleRef.current + turns * 360 + delta;
+    const next = current + turns * 360 + delta;
+
+    // Lock aim to the landing offset so after spin the wheel stays put.
+    aimOffsetRef.current = finalOffset;
+    setAimOffset(finalOffset);
 
     const frame = window.requestAnimationFrame(() => {
-      setMarkerTransition(`transform ${SPIN_MS}ms cubic-bezier(0.08, 0.82, 0.08, 1)`);
-      setMarkerAngle(next);
+      setWheelTransition(`transform ${SPIN_MS}ms cubic-bezier(0.08, 0.82, 0.08, 1)`);
+      setWheelAngle(next);
+      wheelAngleRef.current = next;
     });
 
     const timer = window.setTimeout(() => {
       setSettled(true);
-      setDisplayWon(won);
-      onSpinEndRef.current?.(won);
+      setDisplayWon(outcome);
+      onSpinEndRef.current?.(outcome);
+      // Snap stored angle into 0–360 range matching aim.
+      setWheelTransition("none");
+      setWheelAngle(finalOffset);
+      wheelAngleRef.current = finalOffset;
     }, SPIN_MS + 80);
 
     return () => {
@@ -190,17 +221,17 @@ export function UpgraderWheel({
       aria-label="Drag to aim win zone"
       aria-valuemin={0}
       aria-valuemax={360}
-      aria-valuenow={Math.round(zoneOffset)}
+      aria-valuenow={Math.round(aimOffset)}
       tabIndex={0}
       onKeyDown={(event) => {
         if (spinning) return;
         if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
           event.preventDefault();
-          setZoneOffset((value) => normalizeDeg(value + 8));
+          setAimOffset((value) => normalizeDeg(value + 8));
         }
         if (event.key === "ArrowRight" || event.key === "ArrowUp") {
           event.preventDefault();
-          setZoneOffset((value) => normalizeDeg(value - 8));
+          setAimOffset((value) => normalizeDeg(value - 8));
         }
       }}
     >
@@ -212,36 +243,28 @@ export function UpgraderWheel({
       >
         <div
           className="relative size-full overflow-hidden rounded-full"
-          style={{ background: winZoneBackground(zoneOffset, winDegrees) }}
+          style={{
+            background: winZoneBackground(winDegrees),
+            transform: `rotate(${wheelAngle}deg)`,
+            transition: wheelTransition,
+          }}
         >
           <div className="pointer-events-none absolute inset-[14%] rounded-full border border-white/5 bg-[#121218]" />
         </div>
       </div>
 
-      <div
-        className="pointer-events-none absolute inset-0 z-20"
-        style={{
-          transform: `rotate(${markerAngle}deg)`,
-          transition: markerTransition,
-        }}
-        aria-hidden="true"
-      >
-        <div className="absolute top-1 left-1/2 -translate-x-1/2">
-          <div
-            className={cn(
-              "size-3.5 rounded-full border-2 border-[#121218] bg-white shadow-[0_0_12px_rgba(255,255,255,0.55)] sm:size-4",
-              settled && displayWon === true && "bg-primary shadow-[0_0_16px_rgba(84,104,241,0.8)]",
-              settled && displayWon === false && "bg-rose-400 shadow-[0_0_16px_rgba(251,113,133,0.65)]",
-            )}
-          />
-        </div>
-      </div>
-
+      {/* Fixed result pointer at 12 o'clock — win = blue under this tip. */}
       <div
         className="pointer-events-none absolute top-0 left-1/2 z-30 -translate-x-1/2 -translate-y-0.5"
         aria-hidden="true"
       >
-        <div className="h-0 w-0 border-x-[7px] border-t-[12px] border-x-transparent border-t-white/90" />
+        <div
+          className={cn(
+            "h-0 w-0 border-x-[7px] border-t-[12px] border-x-transparent border-t-white/90 drop-shadow",
+            settled && displayWon === true && "border-t-primary",
+            settled && displayWon === false && "border-t-rose-400",
+          )}
+        />
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center">

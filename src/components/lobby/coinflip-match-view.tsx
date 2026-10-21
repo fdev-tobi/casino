@@ -196,10 +196,11 @@ export function CoinFlipMatchView({
         <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 justify-center overflow-visible">
           <CoinFlipCoin
-            key={game.flipStartedAt ?? "idle"}
+            key={`${game.flipStartedAt ?? "idle"}-${game.winnerSide ?? "heads"}`}
             size="lg"
             spinning={spinning}
             flipStartedAt={game.flipStartedAt ?? null}
+            resultSide={game.winnerSide ?? "heads"}
           />
         </div>
         <PlayerColumn player={rightPlayer} side="tails" waiting={rightWaiting} />

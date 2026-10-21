@@ -83,7 +83,8 @@ export function CoinFlipLobby() {
         return {
           ...entry,
           flipStartedAt: Date.now(),
-          winnerSide: entry.winnerSide ?? (Math.random() < 0.5 ? "heads" : "tails"),
+          // Fresh outcome each replay so the sprite sheet and label stay in sync.
+          winnerSide: Math.random() < 0.5 ? "heads" : "tails",
         };
       }),
     );

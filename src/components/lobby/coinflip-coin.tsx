@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
+import type { CoinSide } from "@/types/lobby";
 
 const FRAME_PX = 400;
 /** Full sprite walk once — slower than chroma default (~0.9s). */
@@ -10,6 +11,16 @@ export const COIN_FLIP_DURATION_MS = 1800;
 const FLIP_STEPS = 68;
 /** Horizontal strip: 68 steps × 400px. */
 const END_OFFSET_PX = -27_200;
+
+const SHEET: Record<CoinSide, string> = {
+  heads: "/sprites/heads.png",
+  tails: "/sprites/tails.png",
+};
+
+const MEDALLION: Record<CoinSide, string> = {
+  heads: "/sprites/coin-heads.png",
+  tails: "/sprites/coin-tails.png",
+};
 
 const sizeClass = {
   sm: "h-16 w-16 [--cf-coin-scale:0.2]",
@@ -19,19 +30,22 @@ const sizeClass = {
 } as const;
 
 /**
- * Sprite-sheet coin between match seats (`/sprites/tails.png`, 69×400px frames).
- * Driven by `flipStartedAt` (join time). Negative animation-delay catches up when
- * View opens mid-flip; remount via `key={flipStartedAt}` to restart cleanly.
+ * Sprite-sheet coin between match seats.
+ * `resultSide` picks heads.png (ends on H) or tails.png (ends on T) so the
+ * animation and the "Heads/Tails wins" label always match.
  */
 export function CoinFlipCoin({
   spinning = false,
   flipStartedAt = null,
+  resultSide = "heads",
   size = "lg",
   className,
 }: {
   spinning?: boolean;
   /** Epoch ms when join completed / flip began. */
   flipStartedAt?: number | null;
+  /** Winning side — selects the sprite sheet that ends on that face. */
+  resultSide?: CoinSide;
   size?: keyof typeof sizeClass;
   className?: string;
 }) {
@@ -44,7 +58,6 @@ export function CoinFlipCoin({
       setNow(Date.now());
       return;
     }
-    // Keep `now` fresh at start so delay is accurate, then snap to end when done.
     setNow(Date.now());
     const timer = window.setTimeout(() => setNow(Date.now()), COIN_FLIP_DURATION_MS - elapsed + 16);
     return () => window.clearTimeout(timer);
@@ -54,6 +67,24 @@ export function CoinFlipCoin({
   const isFlipping = Boolean(spinning && flipStartedAt && elapsed < COIN_FLIP_DURATION_MS);
   const showEnd = Boolean(spinning && flipStartedAt && elapsed >= COIN_FLIP_DURATION_MS);
 
+  // Idle / waiting: crisp medallion (sprite frame 0 is empty).
+  if (!isFlipping && !showEnd) {
+    return (
+      <span
+        className={cn("relative block shrink-0 overflow-visible", sizeClass[size], className)}
+        aria-hidden="true"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={MEDALLION[resultSide]}
+          alt=""
+          className="size-full object-contain"
+          draggable={false}
+        />
+      </span>
+    );
+  }
+
   const style: CSSProperties = {
     position: "absolute",
     top: "50%",
@@ -61,7 +92,7 @@ export function CoinFlipCoin({
     zIndex: 10,
     width: FRAME_PX,
     height: FRAME_PX,
-    backgroundImage: 'url("/sprites/tails.png")',
+    backgroundImage: `url("${SHEET[resultSide]}")`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: showEnd ? `${END_OFFSET_PX}px 0` : "0 0",
     transform: "translate(-50%, -50%) scale(var(--cf-coin-scale, 0.56))",
@@ -74,7 +105,6 @@ export function CoinFlipCoin({
       animationTimingFunction: `steps(${FLIP_STEPS}, end)`,
       animationIterationCount: 1,
       animationFillMode: "forwards",
-      // Seek into the flip if View opened after join.
       animationDelay: `-${Math.min(elapsed, COIN_FLIP_DURATION_MS - 1)}ms`,
     } satisfies CSSProperties);
   }
