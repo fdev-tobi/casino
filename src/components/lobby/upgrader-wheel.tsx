@@ -24,15 +24,17 @@ function normalizeDeg(value: number): number {
 
 /**
  * Whether the fixed top pointer (angle 0) sits inside the win arc after `offset`
- * rotation of the wheel. Arc is `[offset, offset + winDegrees)` clockwise from top.
+ * rotation of the wheel. Blue arc in local space is `[0, winDegrees)` from top CW;
+ * after `rotate(offset)` it covers screen angles `[offset, offset + winDegrees)`.
  */
 export function isPointerInWinZone(offset: number, winDegrees: number): boolean {
   const span = Math.max(0, Math.min(360, winDegrees));
   if (span <= 0) return false;
   if (span >= 360) return true;
-  // Distance clockwise from zone start to the pointer at 0°.
-  const intoZone = normalizeDeg(0 - offset);
-  return intoZone < span;
+  // Local angle under the tip: rotate(offset) maps local L → screen offset+L.
+  // Screen 0 ⇒ local = -offset.
+  const localUnderPointer = normalizeDeg(-offset);
+  return localUnderPointer < span;
 }
 
 /** Pick a final wheel offset so the top pointer is inside (win) or outside (miss) the blue arc. */
@@ -56,16 +58,18 @@ function winZoneBackground(winDegrees: number): string {
   const lose = "#2a2d3a";
   const win = "var(--primary)";
 
+  // CSS conic 0deg is already at 12 o'clock (top), clockwise — must match the
+  // fixed pointer + isPointerInWinZone math (local 0 = top under the tip).
   if (span <= 0) {
-    return `conic-gradient(from -90deg, ${lose} 0deg 360deg)`;
+    return `conic-gradient(from 0deg, ${lose} 0deg 360deg)`;
   }
   if (span >= 360) {
-    return `conic-gradient(from -90deg, ${win} 0deg 360deg)`;
+    return `conic-gradient(from 0deg, ${win} 0deg 360deg)`;
   }
 
   // Zone painted from 0° (top) clockwise for `span` degrees in local wheel space.
   // The whole layer is rotated by `wheelAngle`, so aiming + spin move the blue arc.
-  return `conic-gradient(from -90deg, ${win} 0deg ${span}deg, ${lose} ${span}deg 360deg)`;
+  return `conic-gradient(from 0deg, ${win} 0deg ${span}deg, ${lose} ${span}deg 360deg)`;
 }
 
 export function UpgraderWheel({
