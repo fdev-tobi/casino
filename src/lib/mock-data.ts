@@ -391,8 +391,28 @@ export const historyEntries: readonly HistoryEntry[] = [
 /** Default pet used when creating a local demo wager. */
 export const defaultWagerItem: DemoItem = catalogItems[10];
 
-/** Create-match inventory starts empty — pets appear after deposit/restock. */
-export const initialDepositedInventory: readonly DemoItem[] = [];
+/**
+ * Starter wallet for testing CoinFlip / Jackpot / Upgrader.
+ * Cleared when spent; deposit more via the wallet bot panel.
+ */
+export const initialDepositedInventory: readonly DemoItem[] = [
+  catalogItems[0], // Bat Dragon 2030
+  catalogItems[1], // Shadow Dragon 1690
+  catalogItems[1], // Shadow Dragon (second — join ranges)
+  catalogItems[2], // Giraffe 948
+  catalogItems[3], // Frost Dragon 654
+  catalogItems[4], // Owl 493
+  catalogItems[5], // Parrot 395
+  catalogItems[6], // Crow 356
+  catalogItems[7], // Evil Unicorn 232
+  catalogItems[8], // Dalmatian 129
+  catalogItems[9], // Arctic Reindeer 107
+  catalogItems[10], // Turtle 50
+  catalogItems[10],
+  catalogItems[11], // Kangaroo 37.5
+  catalogItems[11],
+  catalogItems[13], // Neon Frost Dragon 1260
+];
 
 export function getCoinFlipById(id: string): CoinFlipGame | undefined {
   return coinFlipGames.find((game) => game.id === id);
