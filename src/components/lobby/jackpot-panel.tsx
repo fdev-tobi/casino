@@ -67,7 +67,7 @@ export function JackpotPanel() {
       <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded border bg-card p-4">
           <div className="mb-4 inline-flex items-center rounded-sm bg-primary px-5 py-1.5 text-sm font-semibold text-background">
-            MM2
+            Jackpot
           </div>
           <div className="relative mx-auto flex size-56 items-center justify-center sm:size-64">
             <div
