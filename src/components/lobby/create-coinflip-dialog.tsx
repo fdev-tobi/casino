@@ -4,6 +4,7 @@ import { Gem, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { CoinSideIcon } from "@/components/lobby/coin-side-icon";
+import { DepositBotPanel } from "@/components/lobby/deposit-bot-panel";
 import { useInventory } from "@/components/lobby/inventory-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
@@ -32,7 +33,7 @@ export function CreateCoinflipDialog({
   onOpenChange: (open: boolean) => void;
   onCreate: (payload: { items: DemoItem[]; side: CoinSide }) => void;
 }) {
-  const { items, catalog, deposit, ready } = useInventory();
+  const { items, ready } = useInventory();
   const [mode, setMode] = useState<PanelMode>("select");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("high-low");
@@ -49,16 +50,13 @@ export function CreateCoinflipDialog({
     }
   }, [open]);
 
-  const source = mode === "select" ? items : catalog;
-
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = source.filter((item) => !q || item.name.toLowerCase().includes(q));
-    const ordered = [...filtered].sort((a, b) =>
+    const filtered = items.filter((item) => !q || item.name.toLowerCase().includes(q));
+    return [...filtered].sort((a, b) =>
       sort === "high-low" ? b.value - a.value : a.value - b.value,
     );
-    return ordered;
-  }, [source, query, sort]);
+  }, [items, query, sort]);
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedIds.includes(item.id)),
@@ -75,18 +73,30 @@ export function CreateCoinflipDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(92dvh,40rem)] w-[min(100%-1.5rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:w-[min(100%-1.5rem,42rem)] sm:max-w-2xl">
         <DialogHeader className="shrink-0 border-b border-border px-4 py-4 sm:px-5">
-          <DialogTitle className="text-xl font-bold">Create Coinflip</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {mode === "deposit" ? "Deposit Items" : "Create Coinflip"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            Choose deposited pets and a coin side to create a match.
+            {mode === "deposit"
+              ? "Join Adopt Me, trade the deposit bot, and receive pets in your inventory."
+              : "Choose deposited pets and a coin side to create a match."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col px-4 pt-3 sm:px-5">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-white/70">
-              {mode === "select" ? "Select Item" : "Deposit Items"}
+              {mode === "select" ? "Select Item" : "Bot deposit"}
             </p>
-            {mode === "deposit" ? (
+            {mode === "select" ? (
+              <button
+                type="button"
+                className="text-sm font-semibold text-primary hover:underline"
+                onClick={() => setMode("deposit")}
+              >
+                Deposit Items
+              </button>
+            ) : (
               <button
                 type="button"
                 className="text-sm font-semibold text-primary hover:underline"
@@ -94,95 +104,91 @@ export function CreateCoinflipDialog({
               >
                 Back to inventory
               </button>
-            ) : null}
-          </div>
-
-          <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-white/35" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search for an item.."
-                className="h-10 rounded-md border-border bg-input pl-9"
-              />
-            </label>
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortMode)}
-              className="h-10 rounded-md border border-border bg-input px-3 text-sm font-semibold text-foreground"
-              aria-label="Sort items"
-            >
-              <option value="high-low">High - Low</option>
-              <option value="low-high">Low - High</option>
-            </select>
-            <select
-              value="adoptme"
-              disabled
-              className="h-10 rounded-md border border-border bg-input px-3 text-sm font-semibold text-foreground opacity-90"
-              aria-label="Game"
-            >
-              <option value="adoptme">Adopt Me</option>
-            </select>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-border bg-[#121218]/p-3">
-            {!ready ? (
-              <p className="py-16 text-center text-sm text-white/45">Loading inventory…</p>
-            ) : visible.length === 0 ? (
-              <div className="flex min-h-[16rem] flex-col items-center justify-center gap-3 px-4 text-center">
-                <p className="text-2xl font-bold">No Items!</p>
-                <p className="text-sm text-white/50">
-                  {mode === "select"
-                    ? "Your inventory seems to be empty..."
-                    : "No pets match that search."}
-                </p>
-                {mode === "select" ? (
-                  <Button type="button" className="mt-1 rounded-md px-6 font-bold" onClick={() => setMode("deposit")}>
-                    Deposit Items
-                  </Button>
-                ) : null}
-              </div>
-            ) : (
-              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {visible.map((item) => {
-                  const selected = mode === "select" && selectedIds.includes(item.id);
-                  return (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (mode === "deposit") {
-                            deposit(item);
-                            setMode("select");
-                            return;
-                          }
-                          toggleSelect(item.id);
-                        }}
-                        className={cn(
-                          "flex w-full flex-col items-center gap-2 rounded-lg border bg-[#1c1e27] px-2 py-3 text-center transition",
-                          selected
-                            ? "border-primary ring-1 ring-primary"
-                            : "border-transparent hover:border-white/15",
-                        )}
-                      >
-                        <ItemChip item={item} size="lg" />
-                        <span className="line-clamp-2 w-full text-xs font-semibold leading-4 text-white/85">
-                          {item.name}
-                        </span>
-                        <ValueGem amount={item.value} className="text-xs" />
-                        {mode === "deposit" ? (
-                          <span className="text-[0.65rem] font-bold uppercase tracking-wide text-primary">
-                            Deposit
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
             )}
           </div>
+
+          {mode === "select" ? (
+            <>
+              <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                <label className="relative block">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-white/35" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search for an item.."
+                    className="h-10 rounded-md border-border bg-input pl-9"
+                  />
+                </label>
+                <select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as SortMode)}
+                  className="h-10 rounded-md border border-border bg-input px-3 text-sm font-semibold text-foreground"
+                  aria-label="Sort items"
+                >
+                  <option value="high-low">High - Low</option>
+                  <option value="low-high">Low - High</option>
+                </select>
+                <select
+                  value="adoptme"
+                  disabled
+                  className="h-10 rounded-md border border-border bg-input px-3 text-sm font-semibold text-foreground opacity-90"
+                  aria-label="Game"
+                >
+                  <option value="adoptme">Adopt Me</option>
+                </select>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-border bg-[#121218] p-3">
+                {!ready ? (
+                  <p className="py-16 text-center text-sm text-white/45">Loading inventory…</p>
+                ) : visible.length === 0 ? (
+                  <div className="flex min-h-[16rem] flex-col items-center justify-center gap-3 px-4 text-center">
+                    <p className="text-2xl font-bold">No Items!</p>
+                    <p className="text-sm text-white/50">
+                      Join Adopt Me, trade our bot, and pets credit here automatically.
+                    </p>
+                    <Button
+                      type="button"
+                      className="mt-1 rounded-md px-6 font-bold"
+                      onClick={() => setMode("deposit")}
+                    >
+                      Deposit Items
+                    </Button>
+                  </div>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                    {visible.map((item) => {
+                      const selected = selectedIds.includes(item.id);
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => toggleSelect(item.id)}
+                            className={cn(
+                              "flex w-full flex-col items-center gap-2 rounded-lg border bg-[#1c1e27] px-2 py-3 text-center transition",
+                              selected
+                                ? "border-primary ring-1 ring-primary"
+                                : "border-transparent hover:border-white/15",
+                            )}
+                          >
+                            <ItemChip item={item} size="lg" />
+                            <span className="line-clamp-2 w-full text-xs font-semibold leading-4 text-white/85">
+                              {item.name}
+                            </span>
+                            <ValueGem amount={item.value} className="text-xs" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-border bg-[#121218] p-3">
+              <DepositBotPanel onDone={() => setMode("select")} />
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex shrink-0 flex-col items-stretch gap-3 border-t border-border bg-[#0e0f14] px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:px-5">
@@ -206,8 +212,13 @@ export function CreateCoinflipDialog({
               </Button>
             </>
           ) : (
-            <Button type="button" variant="secondary" className="h-11 rounded-md font-bold" onClick={() => setMode("select")}>
-              Done depositing
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11 rounded-md font-bold"
+              onClick={() => setMode("select")}
+            >
+              Back to inventory
             </Button>
           )}
         </div>
