@@ -19,16 +19,36 @@ function PlayerColumn({
   player,
   side,
   waiting,
+  outcome = "pending",
 }: {
   player: DemoPlayer | null;
   side: CoinSide;
   waiting?: boolean;
+  /** After the flip settles: light up the winner, dim the loser. */
+  outcome?: "pending" | "winner" | "loser";
 }) {
+  const isWinner = outcome === "winner";
+  const isLoser = outcome === "loser";
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 flex-col items-center gap-2 transition duration-500",
+        isLoser && "opacity-40",
+      )}
+    >
       {player && !waiting ? (
-        <span className="relative">
-          <Avatar player={player} size="lg" className="size-16 border-2 border-white/15 sm:size-[4.5rem]" />
+        <span className={cn("relative", isWinner && "cf-winner-aura")}>
+          <Avatar
+            player={player}
+            size="lg"
+            className={cn(
+              "size-16 border-2 sm:size-[4.5rem]",
+              isWinner
+                ? "border-primary shadow-[0_0_0_3px_rgba(84,104,241,0.55)]"
+                : "border-white/15",
+            )}
+          />
           <span className="absolute -bottom-1 -left-1 inline-flex size-8 items-center justify-center overflow-hidden rounded-full bg-black shadow-md ring-2 ring-[#121218] sm:size-9">
             <CoinSideIcon side={side} className="size-full" />
           </span>
@@ -39,7 +59,12 @@ function PlayerColumn({
           <CoinSideIcon side={side} className="size-[85%] opacity-40" />
         </span>
       )}
-      <p className="max-w-[7.5rem] truncate text-sm font-semibold text-white/90 sm:max-w-[9rem]">
+      <p
+        className={cn(
+          "max-w-[7.5rem] truncate text-sm font-semibold sm:max-w-[9rem]",
+          isWinner ? "text-primary" : "text-white/90",
+        )}
+      >
         {waiting || !player ? "Waiting…" : player.name}
       </p>
     </div>
@@ -137,6 +162,19 @@ export function CoinFlipMatchView({
   const [settledNotified, setSettledNotified] = useState(false);
   const [flipDone, setFlipDone] = useState(false);
 
+  const leftOutcome: "pending" | "winner" | "loser" =
+    !flipDone || !game.winnerSide
+      ? "pending"
+      : game.winnerSide === "heads"
+        ? "winner"
+        : "loser";
+  const rightOutcome: "pending" | "winner" | "loser" =
+    !flipDone || !game.winnerSide
+      ? "pending"
+      : game.winnerSide === "tails"
+        ? "winner"
+        : "loser";
+
   useEffect(() => {
     setSettledNotified(false);
     setFlipDone(false);
@@ -198,7 +236,12 @@ export function CoinFlipMatchView({
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-1 sm:mt-8 sm:gap-3 sm:px-2">
-        <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
+        <PlayerColumn
+          player={leftPlayer}
+          side="heads"
+          waiting={leftWaiting}
+          outcome={leftOutcome}
+        />
         {hasJoiner && game.flipStartedAt ? (
           <div className="relative z-20 flex shrink-0 items-center justify-center overflow-visible">
             <CoinFlipCoin
@@ -212,7 +255,12 @@ export function CoinFlipMatchView({
         ) : (
           <span className="px-2 text-sm font-bold tracking-wide text-white/35">VS</span>
         )}
-        <PlayerColumn player={rightPlayer} side="tails" waiting={rightWaiting} />
+        <PlayerColumn
+          player={rightPlayer}
+          side="tails"
+          waiting={rightWaiting}
+          outcome={rightOutcome}
+        />
       </div>
 
       <button

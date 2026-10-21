@@ -12,14 +12,8 @@ const FLIP_STEPS = 68;
 /** Horizontal strip: 68 steps × 400px. */
 const END_OFFSET_PX = -27_200;
 
-/**
- * Resting art size differs per sheet (heads last frame is larger than tails).
- * Scale each side so the final face matches BOX_PX.
- */
-const END_ART_PX: Record<CoinSide, number> = {
-  heads: 158,
-  tails: 130,
-};
+/** Resting art is ~128px inside the 400px frame — same for H and T. */
+const END_ART_PX = 128;
 
 const BOX_PX = {
   sm: 64,
@@ -27,22 +21,25 @@ const BOX_PX = {
   lg: 120,
 } as const;
 
+/**
+ * Both sheets share the same flip motion (frames 0–59).
+ * Frames 60–68 hold the result face — heads strip ends on H, tails on T.
+ * Same frame count, duration, steps, and CSS scale for both.
+ */
 const SHEET: Record<CoinSide, string> = {
-  heads: "/sprites/heads.png",
-  tails: "/sprites/tails.png",
+  heads: "/sprites/heads.png?v=9",
+  tails: "/sprites/tails.png?v=9",
 };
 
 const sizeClass = {
   sm: "h-16 w-16",
   md: "h-28 w-28",
-  /** Match modal — same visual size for heads and tails end frames. */
   lg: "h-[7.5rem] w-[7.5rem]",
 } as const;
 
 /**
  * Sprite-sheet coin between match seats.
- * Only mounted once both players have joined and a flip has started.
- * After the flip, the last animation frame stays on screen.
+ * Heads and tails use identical flip timing; only the settled face differs.
  */
 export function CoinFlipCoin({
   spinning = false,
@@ -52,9 +49,7 @@ export function CoinFlipCoin({
   className,
 }: {
   spinning?: boolean;
-  /** Epoch ms when join completed / flip began. */
   flipStartedAt?: number | null;
-  /** Winning side — selects the sprite sheet that ends on that face. */
   resultSide?: CoinSide;
   size?: keyof typeof sizeClass;
   className?: string;
@@ -76,7 +71,7 @@ export function CoinFlipCoin({
   const elapsed = flipStartedAt ? Math.max(0, now - flipStartedAt) : 0;
   const isFlipping = Boolean(spinning && flipStartedAt && elapsed < COIN_FLIP_DURATION_MS);
   const showEnd = Boolean(flipStartedAt && elapsed >= COIN_FLIP_DURATION_MS);
-  const scale = BOX_PX[size] / END_ART_PX[resultSide];
+  const scale = BOX_PX[size] / END_ART_PX;
 
   const style: CSSProperties = {
     position: "absolute",

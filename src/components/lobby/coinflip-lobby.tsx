@@ -63,7 +63,8 @@ function withLiveFlip(game: CoinFlipGame): CoinFlipGame {
     ...game,
     status: "full",
     flipStartedAt: Date.now(),
-    winnerSide: game.winnerSide ?? (Math.random() < 0.5 ? "heads" : "tails"),
+    // Fresh random face every View / replay (do not reuse a stored side).
+    winnerSide: Math.random() < 0.5 ? "heads" : "tails",
   };
 }
 
