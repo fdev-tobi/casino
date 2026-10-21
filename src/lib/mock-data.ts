@@ -139,7 +139,8 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     joinerItems: [catalogItems[0]],
     items: [catalogItems[0]],
     value: catalogItems[0].value,
-    flipStartedAt: Date.now() - 60_000,
+    // Placeholder — lobby remaps full matches to Date.now() on the client so View shows a live flip.
+    flipStartedAt: null,
     winnerSide: "heads",
     ...(() => {
       const r = rangeAround(catalogItems[0].value);
@@ -243,7 +244,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     joinerItems: [catalogItems[12], catalogItems[5]],
     items: [catalogItems[12], catalogItems[5]],
     value: gameValue([catalogItems[12], catalogItems[5]]),
-    flipStartedAt: Date.now() - 120_000,
+    flipStartedAt: null,
     winnerSide: "tails",
     ...(() => {
       const v = gameValue([catalogItems[12], catalogItems[5]]);

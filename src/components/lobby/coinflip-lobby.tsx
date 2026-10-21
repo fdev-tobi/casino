@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
+import { COIN_FLIP_DURATION_MS } from "@/components/lobby/coinflip-coin";
 import { CoinFlipGameRow } from "@/components/lobby/coinflip-game-row";
 import { CoinFlipMatchView } from "@/components/lobby/coinflip-match-view";
 import { CreateCoinflipDialog } from "@/components/lobby/create-coinflip-dialog";
@@ -21,6 +22,11 @@ import {
 } from "@/components/ui/sheet";
 import { coinFlipGames, lobbyStats } from "@/lib/mock-data";
 import type { CoinFlipGame, CoinSide, DemoItem, DemoPlayer } from "@/types/lobby";
+
+function flipInProgress(flipStartedAt: number | null | undefined): boolean {
+  if (typeof flipStartedAt !== "number") return false;
+  return Date.now() - flipStartedAt < COIN_FLIP_DURATION_MS;
+}
 
 function userAsPlayer(
   username: string,
@@ -52,16 +58,35 @@ export function CoinFlipLobby() {
       joinerItems: game.joinerItems ?? [],
     })),
   );
-  const [selected, setSelected] = useState<CoinFlipGame | null>(null);
+  /** Track by id so View stays live when the match updates (join / flip). */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinTarget, setJoinTarget] = useState<CoinFlipGame | null>(null);
   const [joinedToast, setJoinedToast] = useState<string | null>(null);
   const creditedFlips = useRef(new Set<string>());
 
+  const selected = useMemo(
+    () => (selectedId ? (games.find((game) => game.id === selectedId) ?? null) : null),
+    [selectedId, games],
+  );
+
   function openMatch(game: CoinFlipGame) {
-    // Do not remount/restart the flip — sync to game.flipStartedAt.
-    setSelected(game);
+    setSelectedId(game.id);
+
+    // Full match: play the flip in View. If a join just started the flip, catch up
+    // mid-animation; otherwise begin now so the viewer actually sees it.
+    setGames((list) =>
+      list.map((entry) => {
+        if (entry.id !== game.id || entry.status !== "full") return entry;
+        if (flipInProgress(entry.flipStartedAt)) return entry;
+        return {
+          ...entry,
+          flipStartedAt: Date.now(),
+          winnerSide: entry.winnerSide ?? (Math.random() < 0.5 ? "heads" : "tails"),
+        };
+      }),
+    );
   }
 
   const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
@@ -118,7 +143,7 @@ export function CoinFlipLobby() {
     removeByIds(items.map((item) => item.id));
     setGames((list) => list.map((entry) => (entry.id === game.id ? updated : entry)));
     setJoinTarget(null);
-    setSelected(updated);
+    setSelectedId(game.id);
     setJoinedToast(`Joined ${game.host.name}'s match — flipping!`);
     window.setTimeout(() => setJoinedToast(null), 2000);
   }
@@ -154,20 +179,19 @@ export function CoinFlipLobby() {
 
   function handleFlipSettled(game: CoinFlipGame) {
     if (!game.winnerSide || creditedFlips.current.has(game.id)) return;
-    creditedFlips.current.add(game.id);
 
+    // Spectator viewing a lobby full-match: leave status as full so View can replay later.
+    const userPlayed = Boolean(user && isUserInGame(game, user.username));
+    if (!userPlayed) return;
+
+    creditedFlips.current.add(game.id);
     setGames((list) =>
       list.map((entry) => (entry.id === game.id ? { ...entry, status: "ended" as const } : entry)),
     );
-    setSelected((current) =>
-      current?.id === game.id ? { ...current, status: "ended" } : current,
-    );
-
-    if (!user) return;
 
     const hostWon = game.winnerSide === game.hostSide;
     const winner = hostWon ? game.host : game.joiner;
-    if (!winner || winner.name.toLowerCase() !== user.username.toLowerCase()) return;
+    if (!winner || !user || winner.name.toLowerCase() !== user.username.toLowerCase()) return;
 
     const pot = [...game.items, ...(game.joinerItems ?? [])];
     if (pot.length === 0) return;
@@ -237,8 +261,8 @@ export function CoinFlipLobby() {
         })}
       </div>
 
-      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent fullscreen className="border-[#22242f] bg-[#121218] sm:max-w-lg">
+      <Dialog open={selectedId !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <DialogContent fullscreen className="border-[#22242f] bg-[#121218] sm:max-w-lg sm:overflow-visible">
           {selected ? (
             <CoinFlipMatchView
               game={selected}

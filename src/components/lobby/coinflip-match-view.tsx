@@ -130,21 +130,45 @@ export function CoinFlipMatchView({
   const rightAmount = hostSide === "heads" ? joinerTotal : hostTotal;
 
   const [settledNotified, setSettledNotified] = useState(false);
+  const [flipDone, setFlipDone] = useState(false);
 
   useEffect(() => {
-    if (!game.flipStartedAt || settledNotified || !onFlipSettled) return;
-    const remaining = COIN_FLIP_DURATION_MS - (Date.now() - game.flipStartedAt);
-    if (remaining <= 0) {
-      onFlipSettled(game);
+    setSettledNotified(false);
+    setFlipDone(false);
+  }, [game.id, game.flipStartedAt]);
+
+  useEffect(() => {
+    if (!game.flipStartedAt) {
+      setFlipDone(false);
+      return;
+    }
+    if (game.status === "ended") {
+      setFlipDone(true);
+      return;
+    }
+    const age = Date.now() - game.flipStartedAt;
+    if (age >= COIN_FLIP_DURATION_MS) {
+      setFlipDone(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setFlipDone(true), COIN_FLIP_DURATION_MS - age + 20);
+    return () => window.clearTimeout(timer);
+  }, [game.flipStartedAt, game.status]);
+
+  useEffect(() => {
+    if (!flipDone || settledNotified || !onFlipSettled || !game.flipStartedAt) return;
+    if (game.status === "ended") {
       setSettledNotified(true);
       return;
     }
-    const timer = window.setTimeout(() => {
-      onFlipSettled(game);
+    // Ignore absurdly old start times (stale data) — only settle live joins.
+    if (Date.now() - game.flipStartedAt > 60_000) {
       setSettledNotified(true);
-    }, remaining + 40);
-    return () => window.clearTimeout(timer);
-  }, [game, game.flipStartedAt, onFlipSettled, settledNotified]);
+      return;
+    }
+    onFlipSettled(game);
+    setSettledNotified(true);
+  }, [flipDone, settledNotified, onFlipSettled, game]);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -168,10 +192,11 @@ export function CoinFlipMatchView({
         </div>
       </div>
 
-      <div className="relative mt-2 flex flex-1 items-center justify-between gap-2 px-1 py-12 sm:px-3 sm:py-14">
+      <div className="relative mt-2 flex min-h-[16rem] flex-1 items-center justify-between gap-2 overflow-visible px-1 py-16 sm:min-h-[20rem] sm:px-3 sm:py-20">
         <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 justify-center overflow-visible">
           <CoinFlipCoin
+            key={game.flipStartedAt ?? "idle"}
             size="lg"
             spinning={spinning}
             flipStartedAt={game.flipStartedAt ?? null}
@@ -204,7 +229,7 @@ export function CoinFlipMatchView({
         </Button>
       ) : game.status === "open" && !canJoin ? (
         <p className="mt-4 text-center text-sm font-semibold text-white/45">You created this match</p>
-      ) : game.winnerSide && game.flipStartedAt && Date.now() - game.flipStartedAt >= COIN_FLIP_DURATION_MS ? (
+      ) : game.winnerSide && flipDone ? (
         <p className="mt-4 text-center text-sm font-bold text-primary">
           {game.winnerSide === "heads" ? "Heads" : "Tails"} wins
         </p>
