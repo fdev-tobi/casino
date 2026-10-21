@@ -66,7 +66,6 @@ async function loadSnapshot(): Promise<SnapshotFile> {
   return mod.default as SnapshotFile;
 }
 
-
 function toValuation(
   item: {
     id: string;
