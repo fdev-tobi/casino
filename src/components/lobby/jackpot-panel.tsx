@@ -5,17 +5,38 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
+import { useInventory } from "@/components/lobby/inventory-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
+import { SelectInventoryDialog } from "@/components/lobby/select-inventory-dialog";
 import { ValueGem } from "@/components/lobby/value-gem";
+import { useWallet } from "@/components/lobby/wallet-provider";
 import { Button } from "@/components/ui/button";
-import { defaultWagerItem, jackpotRound } from "@/lib/mock-data";
-import type { DemoPlayer } from "@/types/lobby";
+import { jackpotRound } from "@/lib/mock-data";
+import type { DemoItem, DemoPlayer, JackpotEntry } from "@/types/lobby";
+
+function withChances(entries: JackpotEntry[], sumAmounts: (items: DemoItem[]) => number): JackpotEntry[] {
+  const total = entries.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
+  if (total <= 0) {
+    return entries.map((entry) => ({ ...entry, chance: 0, value: 0 }));
+  }
+  return entries.map((entry) => {
+    const value = sumAmounts([...entry.items]);
+    return {
+      ...entry,
+      value,
+      chance: (value / total) * 100,
+    };
+  });
+}
 
 export function JackpotPanel() {
   const { user, openLogin } = useAuth();
   const { sumAmounts } = useDisplayValues();
+  const { removeByIds } = useInventory();
+  const { openWallet } = useWallet();
   const [seconds, setSeconds] = useState(jackpotRound.secondsLeft);
   const [joined, setJoined] = useState(false);
+  const [selectOpen, setSelectOpen] = useState(false);
   const [entries, setEntries] = useState(() => [...jackpotRound.entries]);
   const progress = Math.max(0, Math.min(1, seconds / jackpotRound.duration));
   const pot = entries.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
@@ -27,12 +48,18 @@ export function JackpotPanel() {
     return () => window.clearInterval(id);
   }, []);
 
-  function join() {
+  function requestJoin() {
     if (!user) {
       openLogin();
       return;
     }
     if (joined) return;
+    setSelectOpen(true);
+  }
+
+  function confirmJoin(items: DemoItem[]) {
+    if (!user || joined || items.length === 0) return;
+
     const player: DemoPlayer = {
       id: `jp-${user.username}`,
       name: user.username,
@@ -41,25 +68,25 @@ export function JackpotPanel() {
       robloxUserId: user.userId,
       avatarUrl: user.avatarUrl,
     };
-    const value = defaultWagerItem.value;
-    setEntries((current) => {
-      const next = [
-        ...current,
-        {
-          id: `je-local-${Date.now()}`,
-          player,
-          items: [{ ...defaultWagerItem }],
-          value,
-          chance: 0,
-        },
-      ];
-      const total = next.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
-      return next.map((entry) => ({
-        ...entry,
-        chance: (sumAmounts([...entry.items]) / total) * 100,
-      }));
-    });
+
+    removeByIds(items.map((item) => item.id));
+    setEntries((current) =>
+      withChances(
+        [
+          ...current,
+          {
+            id: `je-local-${Date.now()}`,
+            player,
+            items: items.map((item) => ({ ...item })),
+            value: 0,
+            chance: 0,
+          },
+        ],
+        sumAmounts,
+      ),
+    );
     setJoined(true);
+    setSelectOpen(false);
   }
 
   return (
@@ -84,7 +111,7 @@ export function JackpotPanel() {
               </p>
             </div>
           </div>
-          <Button type="button" className="mt-6 w-full" onClick={join} disabled={joined}>
+          <Button type="button" className="mt-6 w-full" onClick={requestJoin} disabled={joined}>
             {joined ? "JOINED" : "JOIN"}
           </Button>
         </section>
@@ -112,6 +139,19 @@ export function JackpotPanel() {
           </ul>
         </section>
       </div>
+
+      <SelectInventoryDialog
+        open={selectOpen}
+        onOpenChange={setSelectOpen}
+        title="Join Jackpot"
+        description="Select pets from your inventory to add to this round."
+        confirmLabel="Join With"
+        onConfirm={confirmJoin}
+        onDepositClick={() => {
+          setSelectOpen(false);
+          openWallet();
+        }}
+      />
     </div>
   );
 }
