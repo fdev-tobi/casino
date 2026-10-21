@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/lobby/avatar";
-import { CoinFlipCoin } from "@/components/lobby/coinflip-coin";
+import { CoinFlipCoin, COIN_FLIP_DURATION_MS } from "@/components/lobby/coinflip-coin";
 import { CoinSideIcon } from "@/components/lobby/coin-side-icon";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
@@ -71,6 +72,7 @@ function ChanceCard({
 
 function ItemsCard({ items, muted = false }: { items: readonly DemoItem[]; muted?: boolean }) {
   const lead = items[0];
+  const total = items.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div
@@ -88,7 +90,7 @@ function ItemsCard({ items, muted = false }: { items: readonly DemoItem[]; muted
               <p className="mt-0.5 text-xs text-white/40">+{items.length - 1} more</p>
             ) : null}
           </div>
-          <ValueGem amount={lead.value} itemId={lead.id} className="shrink-0 text-sm" muted={muted} />
+          <ValueGem amount={total} className="shrink-0 text-sm" muted={muted} />
         </>
       ) : (
         <p className="w-full text-center text-sm text-white/35">Waiting for items…</p>
@@ -101,23 +103,48 @@ export function CoinFlipMatchView({
   game,
   onJoin,
   canJoin = true,
+  onFlipSettled,
 }: {
   game: CoinFlipGame;
   onJoin: () => void;
-  /** False when the viewer hosts this match (cannot join own game). */
   canJoin?: boolean;
+  /** Fires once after the join-started flip animation finishes. */
+  onFlipSettled?: (game: CoinFlipGame) => void;
 }) {
   const { sumAmounts } = useDisplayValues();
-  const total = sumAmounts([...game.items]);
+  const hostTotal = sumAmounts([...game.items]);
+  const joinerItems = game.joinerItems ?? [];
+  const joinerTotal = sumAmounts([...joinerItems]);
   const hasJoiner = Boolean(game.joiner);
   const hostPercent = hasJoiner ? "50.00%" : "100.00%";
   const joinerPercent = hasJoiner ? "50.00%" : "0%";
-  const spinning = game.status === "full" || game.status === "ended";
+  const spinning = Boolean(game.flipStartedAt) && (game.status === "full" || game.status === "ended");
   const hostSide = game.hostSide ?? "heads";
   const leftPlayer = hostSide === "heads" ? game.host : game.joiner;
   const rightPlayer = hostSide === "heads" ? game.joiner : game.host;
   const leftWaiting = hostSide === "heads" ? false : !hasJoiner;
   const rightWaiting = hostSide === "heads" ? !hasJoiner : false;
+  const leftItems = hostSide === "heads" ? game.items : joinerItems;
+  const rightItems = hostSide === "heads" ? joinerItems : game.items;
+  const leftAmount = hostSide === "heads" ? hostTotal : joinerTotal;
+  const rightAmount = hostSide === "heads" ? joinerTotal : hostTotal;
+
+  const [settledNotified, setSettledNotified] = useState(false);
+
+  useEffect(() => {
+    if (!game.flipStartedAt || settledNotified || !onFlipSettled) return;
+    const remaining = COIN_FLIP_DURATION_MS - (Date.now() - game.flipStartedAt);
+    if (remaining <= 0) {
+      onFlipSettled(game);
+      setSettledNotified(true);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      onFlipSettled(game);
+      setSettledNotified(true);
+    }, remaining + 40);
+    return () => window.clearTimeout(timer);
+  }, [game, game.flipStartedAt, onFlipSettled, settledNotified]);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -141,10 +168,14 @@ export function CoinFlipMatchView({
         </div>
       </div>
 
-      <div className="relative mt-3 flex flex-1 items-center justify-between gap-2 px-1 py-10 sm:px-3 sm:py-12">
+      <div className="relative mt-2 flex flex-1 items-center justify-between gap-2 px-1 py-12 sm:px-3 sm:py-14">
         <PlayerColumn player={leftPlayer} side="heads" waiting={leftWaiting} />
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
-          <CoinFlipCoin spinning={spinning} />
+          <CoinFlipCoin
+            size="lg"
+            spinning={spinning}
+            flipStartedAt={game.flipStartedAt ?? null}
+          />
         </div>
         <PlayerColumn player={rightPlayer} side="tails" waiting={rightWaiting} />
       </div>
@@ -161,10 +192,10 @@ export function CoinFlipMatchView({
       </button>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5">
-        <ChanceCard percent={hostPercent} amount={total} />
-        <ChanceCard percent={joinerPercent} amount={hasJoiner ? total : 0} muted={!hasJoiner} />
-        <ItemsCard items={game.items} />
-        <ItemsCard items={hasJoiner ? game.items : []} muted={!hasJoiner} />
+        <ChanceCard percent={hostPercent} amount={leftAmount} muted={leftWaiting} />
+        <ChanceCard percent={joinerPercent} amount={rightAmount} muted={!hasJoiner} />
+        <ItemsCard items={leftItems} muted={leftWaiting} />
+        <ItemsCard items={rightItems} muted={!hasJoiner} />
       </div>
 
       {game.status === "open" && canJoin ? (
@@ -173,6 +204,10 @@ export function CoinFlipMatchView({
         </Button>
       ) : game.status === "open" && !canJoin ? (
         <p className="mt-4 text-center text-sm font-semibold text-white/45">You created this match</p>
+      ) : game.winnerSide && game.flipStartedAt && Date.now() - game.flipStartedAt >= COIN_FLIP_DURATION_MS ? (
+        <p className="mt-4 text-center text-sm font-bold text-primary">
+          {game.winnerSide === "heads" ? "Heads" : "Tails"} wins
+        </p>
       ) : (
         <div className="mt-4 sm:mt-2" />
       )}

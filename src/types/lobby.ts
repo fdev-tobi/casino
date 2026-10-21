@@ -31,11 +31,18 @@ export type CoinFlipGame = {
   host: DemoPlayer;
   joiner: DemoPlayer | null;
   hostSide: CoinSide;
+  /** Host wager items. */
   items: readonly DemoItem[];
+  /** Joiner wager items (empty until someone joins). */
+  joinerItems: readonly DemoItem[];
   value: number;
   rangeMin: number;
   rangeMax: number;
   createdAt: string;
+  /** Epoch ms when the coin flip animation started (set on join). */
+  flipStartedAt?: number | null;
+  /** Winning side, set when the flip starts so View stays in sync. */
+  winnerSide?: CoinSide | null;
 };
 
 export type JackpotEntry = {

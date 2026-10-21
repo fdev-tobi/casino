@@ -8,6 +8,7 @@ import { DepositBotPanel } from "@/components/lobby/deposit-bot-panel";
 import { useInventory } from "@/components/lobby/inventory-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
+import { useWallet } from "@/components/lobby/wallet-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +35,7 @@ export function CreateCoinflipDialog({
   onCreate: (payload: { items: DemoItem[]; side: CoinSide }) => void;
 }) {
   const { items, ready } = useInventory();
+  const { openWallet } = useWallet();
   const [mode, setMode] = useState<PanelMode>("select");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("high-low");
@@ -92,9 +94,12 @@ export function CreateCoinflipDialog({
               <button
                 type="button"
                 className="text-sm font-semibold text-primary hover:underline"
-                onClick={() => setMode("deposit")}
+                onClick={() => {
+                  onOpenChange(false);
+                  openWallet();
+                }}
               >
-                Deposit Items
+                Open wallet
               </button>
             ) : (
               <button

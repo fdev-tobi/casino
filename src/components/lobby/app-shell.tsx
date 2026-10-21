@@ -13,6 +13,8 @@ import { LoginDialog } from "@/components/lobby/login-dialog";
 import { RobloxAvatarProvider } from "@/components/lobby/roblox-avatar-provider";
 import { StatusBanner } from "@/components/lobby/status-banner";
 import { TopHeader } from "@/components/lobby/top-header";
+import { WalletDialog } from "@/components/lobby/wallet-dialog";
+import { WalletProvider } from "@/components/lobby/wallet-provider";
 import {
   Sheet,
   SheetContent,
@@ -92,6 +94,7 @@ function ShellInner({ children }: { children: ReactNode }) {
       </Sheet>
 
       <LoginDialog />
+      <WalletDialog />
     </div>
   );
 }
@@ -102,7 +105,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <DisplayValuesProvider>
         <RobloxAvatarProvider>
           <InventoryProvider>
-            <ShellInner>{children}</ShellInner>
+            <WalletProvider>
+              <ShellInner>{children}</ShellInner>
+            </WalletProvider>
           </InventoryProvider>
         </RobloxAvatarProvider>
       </DisplayValuesProvider>

@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { CoinFlipGameRow } from "@/components/lobby/coinflip-game-row";
 import { CoinFlipMatchView } from "@/components/lobby/coinflip-match-view";
 import { CreateCoinflipDialog } from "@/components/lobby/create-coinflip-dialog";
 import { useInventory } from "@/components/lobby/inventory-provider";
+import { SelectInventoryDialog } from "@/components/lobby/select-inventory-dialog";
 import { ValueGem } from "@/components/lobby/value-gem";
+import { useWallet } from "@/components/lobby/wallet-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -42,17 +44,24 @@ function isUserInGame(game: CoinFlipGame, username: string): boolean {
 
 export function CoinFlipLobby() {
   const { user, openLogin } = useAuth();
-  const { removeByIds } = useInventory();
-  const [games, setGames] = useState(() => [...coinFlipGames]);
+  const { removeByIds, depositMany } = useInventory();
+  const { openWallet } = useWallet();
+  const [games, setGames] = useState(() =>
+    coinFlipGames.map((game) => ({
+      ...game,
+      joinerItems: game.joinerItems ?? [],
+    })),
+  );
   const [selected, setSelected] = useState<CoinFlipGame | null>(null);
-  const [matchViewKey, setMatchViewKey] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [joinTarget, setJoinTarget] = useState<CoinFlipGame | null>(null);
   const [joinedToast, setJoinedToast] = useState<string | null>(null);
+  const creditedFlips = useRef(new Set<string>());
 
   function openMatch(game: CoinFlipGame) {
+    // Do not remount/restart the flip — sync to game.flipStartedAt.
     setSelected(game);
-    setMatchViewKey((key) => key + 1);
   }
 
   const openGames = useMemo(() => games.filter((game) => game.status !== "ended"), [games]);
@@ -72,7 +81,7 @@ export function CoinFlipLobby() {
     return user;
   }
 
-  function joinGame(game: CoinFlipGame) {
+  function requestJoin(game: CoinFlipGame) {
     const current = requireUser();
     if (!current) return;
     if (game.host.name.toLowerCase() === current.username.toLowerCase()) {
@@ -85,18 +94,32 @@ export function CoinFlipLobby() {
       window.setTimeout(() => setJoinedToast(null), 2000);
       return;
     }
+    setJoinTarget(game);
+  }
+
+  function confirmJoin(items: DemoItem[]) {
+    const current = requireUser();
+    const game = joinTarget;
+    if (!current || !game || items.length === 0) return;
+
     const joiner = userAsPlayer(current.username, current.userId, current.avatarUrl);
-    setGames((list) =>
-      list.map((entry) =>
-        entry.id === game.id ? { ...entry, joiner, status: "full" as const } : entry,
-      ),
-    );
-    setSelected((currentSelected) =>
-      currentSelected?.id === game.id
-        ? { ...currentSelected, joiner, status: "full" }
-        : currentSelected,
-    );
-    setJoinedToast(`Joined ${game.host.name}'s match`);
+    const flipStartedAt = Date.now();
+    const winnerSide: CoinSide = Math.random() < 0.5 ? "heads" : "tails";
+
+    const updated: CoinFlipGame = {
+      ...game,
+      joiner,
+      joinerItems: items.map((item) => ({ ...item })),
+      status: "full",
+      flipStartedAt,
+      winnerSide,
+    };
+
+    removeByIds(items.map((item) => item.id));
+    setGames((list) => list.map((entry) => (entry.id === game.id ? updated : entry)));
+    setJoinTarget(null);
+    setSelected(updated);
+    setJoinedToast(`Joined ${game.host.name}'s match — flipping!`);
     window.setTimeout(() => setJoinedToast(null), 2000);
   }
 
@@ -114,16 +137,43 @@ export function CoinFlipLobby() {
       joiner: null,
       hostSide: payload.side,
       items: payload.items.map((item) => ({ ...item })),
+      joinerItems: [],
       value,
       rangeMin: Math.round(value * 0.95),
       rangeMax: Math.round(value * 1.05),
       createdAt: new Date().toISOString(),
+      flipStartedAt: null,
+      winnerSide: null,
     };
     removeByIds(payload.items.map((item) => item.id));
     setGames((list) => [created, ...list]);
     setCreateOpen(false);
     setJoinedToast("Match created");
     window.setTimeout(() => setJoinedToast(null), 2000);
+  }
+
+  function handleFlipSettled(game: CoinFlipGame) {
+    if (!game.winnerSide || creditedFlips.current.has(game.id)) return;
+    creditedFlips.current.add(game.id);
+
+    setGames((list) =>
+      list.map((entry) => (entry.id === game.id ? { ...entry, status: "ended" as const } : entry)),
+    );
+    setSelected((current) =>
+      current?.id === game.id ? { ...current, status: "ended" } : current,
+    );
+
+    if (!user) return;
+
+    const hostWon = game.winnerSide === game.hostSide;
+    const winner = hostWon ? game.host : game.joiner;
+    if (!winner || winner.name.toLowerCase() !== user.username.toLowerCase()) return;
+
+    const pot = [...game.items, ...(game.joinerItems ?? [])];
+    if (pot.length === 0) return;
+    depositMany(pot);
+    setJoinedToast(`You won ${pot.length} pet${pot.length === 1 ? "" : "s"}!`);
+    window.setTimeout(() => setJoinedToast(null), 2500);
   }
 
   return (
@@ -179,8 +229,8 @@ export function CoinFlipLobby() {
             <CoinFlipGameRow
               key={game.id}
               game={game}
-              showJoin={!isOwn}
-              onJoin={() => joinGame(game)}
+              showJoin={!isOwn && game.status === "open"}
+              onJoin={() => requestJoin(game)}
               onView={() => openMatch(game)}
             />
           );
@@ -191,12 +241,12 @@ export function CoinFlipLobby() {
         <DialogContent fullscreen className="border-[#22242f] bg-[#121218] sm:max-w-lg">
           {selected ? (
             <CoinFlipMatchView
-              key={`${selected.id}-${matchViewKey}`}
               game={selected}
               canJoin={
                 !user || selected.host.name.toLowerCase() !== user.username.toLowerCase()
               }
-              onJoin={() => joinGame(selected)}
+              onJoin={() => requestJoin(selected)}
+              onFlipSettled={handleFlipSettled}
             />
           ) : null}
         </DialogContent>
@@ -206,6 +256,26 @@ export function CoinFlipLobby() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreate={createMatch}
+      />
+
+      <SelectInventoryDialog
+        open={joinTarget !== null}
+        onOpenChange={(open) => !open && setJoinTarget(null)}
+        title="Join Coinflip"
+        description={
+          joinTarget
+            ? `Select pets to match ${joinTarget.host.name}'s wager.`
+            : undefined
+        }
+        confirmLabel="Join With"
+        targetValue={joinTarget?.value}
+        rangeMin={joinTarget?.rangeMin}
+        rangeMax={joinTarget?.rangeMax}
+        onConfirm={confirmJoin}
+        onDepositClick={() => {
+          setJoinTarget(null);
+          openWallet();
+        }}
       />
 
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>

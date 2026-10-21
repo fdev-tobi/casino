@@ -1,16 +1,19 @@
 "use client";
 
-import { Coins, Gauge, Gem, LogIn, LogOut, Trophy, Zap } from "lucide-react";
+import { Coins, Gauge, Gem, LogIn, LogOut, Trophy, Wallet, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType, SVGProps } from "react";
+import { useMemo, type ComponentType, type SVGProps } from "react";
 
 import { useAuth } from "@/components/lobby/auth-provider";
 import { Avatar } from "@/components/lobby/avatar";
+import { useInventory } from "@/components/lobby/inventory-provider";
+import { useWallet } from "@/components/lobby/wallet-provider";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { gameModes } from "@/config/navigation";
+import { formatValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const modeIcon: Record<(typeof gameModes)[number]["id"], ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -41,11 +44,39 @@ function BrandMark() {
   );
 }
 
+function WalletButton() {
+  const { user, openLogin } = useAuth();
+  const { items } = useInventory();
+  const { openWallet } = useWallet();
+  const balance = useMemo(
+    () => items.reduce((sum, item) => sum + item.value, 0),
+    [items],
+  );
+
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      className="h-9 gap-1.5 px-2.5 sm:h-10 sm:px-3"
+      onClick={() => (user ? openWallet() : openLogin())}
+      aria-label="Open wallet"
+    >
+      <Wallet className="size-4 shrink-0 text-primary" aria-hidden="true" />
+      <span className="inline-flex items-center gap-1 text-sm font-bold tabular-nums">
+        <Gem className="size-3.5 text-primary" aria-hidden="true" />
+        {formatValue(balance)}
+      </span>
+    </Button>
+  );
+}
+
 function AuthControls() {
   const { user, openLogin, logout } = useAuth();
 
   return (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3" suppressHydrationWarning>
+      <WalletButton />
       {user ? (
         <>
           <div className="flex min-w-0 items-center gap-2">

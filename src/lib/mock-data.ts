@@ -84,6 +84,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[0],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[1]],
     value: catalogItems[1].value,
     ...(() => {
@@ -100,6 +101,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[1],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[2]],
     value: catalogItems[2].value,
     ...(() => {
@@ -116,6 +118,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[2],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[9], catalogItems[10]],
     value: gameValue([catalogItems[9], catalogItems[10]]),
     ...(() => {
@@ -133,8 +136,11 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[6],
     joiner: players[3],
     hostSide: "heads",
+    joinerItems: [catalogItems[0]],
     items: [catalogItems[0]],
     value: catalogItems[0].value,
+    flipStartedAt: Date.now() - 60_000,
+    winnerSide: "heads",
     ...(() => {
       const r = rangeAround(catalogItems[0].value);
       return { rangeMin: r.min, rangeMax: r.max };
@@ -149,6 +155,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[4],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[4]],
     value: catalogItems[4].value,
     ...(() => {
@@ -165,6 +172,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[5],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[7]],
     value: catalogItems[7].value,
     ...(() => {
@@ -181,6 +189,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[7],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[8]],
     value: catalogItems[8].value,
     ...(() => {
@@ -197,6 +206,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[0],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[11]],
     value: catalogItems[11].value,
     ...(() => {
@@ -213,6 +223,7 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[1],
     joiner: null,
     hostSide: "heads",
+    joinerItems: [],
     items: [catalogItems[6]],
     value: catalogItems[6].value,
     ...(() => {
@@ -229,8 +240,11 @@ export const coinFlipGames: readonly CoinFlipGame[] = [
     host: players[2],
     joiner: players[4],
     hostSide: "heads",
+    joinerItems: [catalogItems[12], catalogItems[5]],
     items: [catalogItems[12], catalogItems[5]],
     value: gameValue([catalogItems[12], catalogItems[5]]),
+    flipStartedAt: Date.now() - 120_000,
+    winnerSide: "tails",
     ...(() => {
       const v = gameValue([catalogItems[12], catalogItems[5]]);
       const r = rangeAround(v);
