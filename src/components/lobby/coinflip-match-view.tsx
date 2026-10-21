@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import { Avatar } from "@/components/lobby/avatar";
 import { CoinFlipCoin } from "@/components/lobby/coinflip-coin";
+import { CoinSideIcon } from "@/components/lobby/coin-side-icon";
 import { useDisplayValues } from "@/components/lobby/display-values-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { brand } from "@/config/brand";
 import { cn } from "@/lib/utils";
-import type { CoinFlipGame, DemoItem, DemoPlayer } from "@/types/lobby";
+import type { CoinFlipGame, CoinSide, DemoItem, DemoPlayer } from "@/types/lobby";
 
 function PlayerColumn({
   player,
@@ -19,29 +20,22 @@ function PlayerColumn({
   waiting,
 }: {
   player: DemoPlayer | null;
-  side: "heads" | "tails";
+  side: CoinSide;
   waiting?: boolean;
 }) {
-  const badge = side === "heads" ? "H" : "T";
-  const badgeClass = side === "heads" ? "bg-emerald-500" : "bg-orange-500";
-
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
       {player && !waiting ? (
         <span className="relative">
           <Avatar player={player} size="lg" className="size-16 border-2 border-white/15 sm:size-[4.5rem]" />
-          <span
-            className={cn(
-              "absolute -bottom-0.5 -left-0.5 inline-flex size-6 items-center justify-center rounded-full text-[0.65rem] font-bold text-white shadow-md ring-2 ring-[#121218]",
-              badgeClass,
-            )}
-          >
-            {badge}
+          <span className="absolute -bottom-1 -left-1 inline-flex size-8 items-center justify-center overflow-hidden rounded-full bg-black shadow-md ring-2 ring-[#121218] sm:size-9">
+            <CoinSideIcon side={side} className="size-full" />
           </span>
         </span>
       ) : (
-        <span className="inline-flex size-16 items-center justify-center rounded-full border-2 border-dashed border-white/20 text-lg text-white/35 sm:size-[4.5rem]">
-          ?
+        <span className="relative inline-flex size-16 items-center justify-center sm:size-[4.5rem]">
+          <span className="absolute inset-0 rounded-full border-2 border-dashed border-white/20" />
+          <CoinSideIcon side={side} className="size-[85%] opacity-40" />
         </span>
       )}
       <p className="max-w-[7.5rem] truncate text-sm font-semibold text-white/90 sm:max-w-[9rem]">
@@ -106,9 +100,12 @@ function ItemsCard({ items, muted = false }: { items: readonly DemoItem[]; muted
 export function CoinFlipMatchView({
   game,
   onJoin,
+  canJoin = true,
 }: {
   game: CoinFlipGame;
   onJoin: () => void;
+  /** False when the viewer hosts this match (cannot join own game). */
+  canJoin?: boolean;
 }) {
   const { sumAmounts } = useDisplayValues();
   const total = sumAmounts([...game.items]);
@@ -170,10 +167,12 @@ export function CoinFlipMatchView({
         <ItemsCard items={hasJoiner ? game.items : []} muted={!hasJoiner} />
       </div>
 
-      {game.status === "open" ? (
+      {game.status === "open" && canJoin ? (
         <Button type="button" className="mt-4 h-11 w-full rounded-full text-base font-bold" onClick={onJoin}>
           Join match
         </Button>
+      ) : game.status === "open" && !canJoin ? (
+        <p className="mt-4 text-center text-sm font-semibold text-white/45">You created this match</p>
       ) : (
         <div className="mt-4 sm:mt-2" />
       )}

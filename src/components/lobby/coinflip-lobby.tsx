@@ -75,6 +75,16 @@ export function CoinFlipLobby() {
   function joinGame(game: CoinFlipGame) {
     const current = requireUser();
     if (!current) return;
+    if (game.host.name.toLowerCase() === current.username.toLowerCase()) {
+      setJoinedToast("You can't join your own match");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
+    if (game.status !== "open" || game.joiner) {
+      setJoinedToast("This match is no longer open");
+      window.setTimeout(() => setJoinedToast(null), 2000);
+      return;
+    }
     const joiner = userAsPlayer(current.username, current.userId, current.avatarUrl);
     setGames((list) =>
       list.map((entry) =>
@@ -162,14 +172,19 @@ export function CoinFlipLobby() {
       </div>
 
       <div className="flex-1 space-y-2" aria-label="Active coinflip games">
-        {openGames.map((game) => (
-          <CoinFlipGameRow
-            key={game.id}
-            game={game}
-            onJoin={() => joinGame(game)}
-            onView={() => openMatch(game)}
-          />
-        ))}
+        {openGames.map((game) => {
+          const isOwn =
+            !!user && game.host.name.toLowerCase() === user.username.toLowerCase();
+          return (
+            <CoinFlipGameRow
+              key={game.id}
+              game={game}
+              showJoin={!isOwn}
+              onJoin={() => joinGame(game)}
+              onView={() => openMatch(game)}
+            />
+          );
+        })}
       </div>
 
       <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
@@ -178,6 +193,9 @@ export function CoinFlipLobby() {
             <CoinFlipMatchView
               key={`${selected.id}-${matchViewKey}`}
               game={selected}
+              canJoin={
+                !user || selected.host.name.toLowerCase() !== user.username.toLowerCase()
+              }
               onJoin={() => joinGame(selected)}
             />
           ) : null}

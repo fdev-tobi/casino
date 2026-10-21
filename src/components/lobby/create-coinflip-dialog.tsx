@@ -3,6 +3,7 @@
 import { Gem, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { CoinSideIcon } from "@/components/lobby/coin-side-icon";
 import { useInventory } from "@/components/lobby/inventory-provider";
 import { ItemChip } from "@/components/lobby/item-chip";
 import { ValueGem } from "@/components/lobby/value-gem";
@@ -188,18 +189,8 @@ export function CreateCoinflipDialog({
           {mode === "select" ? (
             <>
               <div className="flex items-center justify-center gap-2 sm:mr-auto">
-                <SideButton
-                  label="H"
-                  active={side === "heads"}
-                  tone="heads"
-                  onClick={() => setSide("heads")}
-                />
-                <SideButton
-                  label="T"
-                  active={side === "tails"}
-                  tone="tails"
-                  onClick={() => setSide("tails")}
-                />
+                <SideButton active={side === "heads"} tone="heads" onClick={() => setSide("heads")} />
+                <SideButton active={side === "tails"} tone="tails" onClick={() => setSide("tails")} />
               </div>
               <Button
                 type="button"
@@ -226,12 +217,10 @@ export function CreateCoinflipDialog({
 }
 
 function SideButton({
-  label,
   active,
   tone,
   onClick,
 }: {
-  label: string;
   active: boolean;
   tone: CoinSide;
   onClick: () => void;
@@ -242,13 +231,12 @@ function SideButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-full text-sm font-bold text-white transition ring-2",
-        tone === "heads" ? "bg-emerald-500" : "bg-orange-500",
-        active ? "ring-white scale-105" : "ring-transparent opacity-55 hover:opacity-85",
+        "inline-flex size-12 items-center justify-center rounded-full bg-black/40 p-0.5 transition ring-2",
+        active ? "scale-110 ring-primary" : "ring-transparent opacity-55 hover:opacity-90",
       )}
       aria-label={tone === "heads" ? "Heads" : "Tails"}
     >
-      {label}
+      <CoinSideIcon side={tone} className="size-full" />
     </button>
   );
 }
