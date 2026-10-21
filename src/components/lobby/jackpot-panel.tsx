@@ -32,11 +32,13 @@ function withChances(entries: JackpotEntry[], sumAmounts: (items: DemoItem[]) =>
 export function JackpotPanel() {
   const { user, openLogin } = useAuth();
   const { sumAmounts } = useDisplayValues();
-  const { removeByIds } = useInventory();
+  const { removeByIds, depositMany } = useInventory();
   const { openWallet } = useWallet();
   const [seconds, setSeconds] = useState(jackpotRound.secondsLeft);
   const [joined, setJoined] = useState(false);
   const [selectOpen, setSelectOpen] = useState(false);
+  const [myEntryId, setMyEntryId] = useState<string | null>(null);
+  const [myItems, setMyItems] = useState<DemoItem[]>([]);
   const [entries, setEntries] = useState(() => [...jackpotRound.entries]);
   const progress = Math.max(0, Math.min(1, seconds / jackpotRound.duration));
   const pot = entries.reduce((sum, entry) => sum + sumAmounts([...entry.items]), 0);
@@ -69,15 +71,18 @@ export function JackpotPanel() {
       avatarUrl: user.avatarUrl,
     };
 
+    const entryId = `je-local-${Date.now()}`;
+    const staked = items.map((item) => ({ ...item }));
+
     removeByIds(items.map((item) => item.id));
     setEntries((current) =>
       withChances(
         [
           ...current,
           {
-            id: `je-local-${Date.now()}`,
+            id: entryId,
             player,
-            items: items.map((item) => ({ ...item })),
+            items: staked,
             value: 0,
             chance: 0,
           },
@@ -85,8 +90,27 @@ export function JackpotPanel() {
         sumAmounts,
       ),
     );
+    setMyEntryId(entryId);
+    setMyItems(staked);
     setJoined(true);
     setSelectOpen(false);
+  }
+
+  function cancelJoin() {
+    if (!joined || !myEntryId) return;
+    const refund = myItems;
+    setEntries((current) =>
+      withChances(
+        current.filter((entry) => entry.id !== myEntryId),
+        sumAmounts,
+      ),
+    );
+    if (refund.length > 0) {
+      depositMany(refund);
+    }
+    setMyEntryId(null);
+    setMyItems([]);
+    setJoined(false);
   }
 
   return (
@@ -111,9 +135,20 @@ export function JackpotPanel() {
               </p>
             </div>
           </div>
-          <Button type="button" className="mt-6 w-full" onClick={requestJoin} disabled={joined}>
-            {joined ? "JOINED" : "JOIN"}
-          </Button>
+          {joined ? (
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <Button type="button" className="w-full" disabled>
+                JOINED
+              </Button>
+              <Button type="button" variant="secondary" className="w-full" onClick={cancelJoin}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" className="mt-6 w-full" onClick={requestJoin}>
+              JOIN
+            </Button>
+          )}
         </section>
 
         <section className="rounded border bg-card p-4">

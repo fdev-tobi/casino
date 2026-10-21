@@ -31,8 +31,7 @@ const sizeClass = {
 
 /**
  * Sprite-sheet coin between match seats.
- * `resultSide` picks heads.png (ends on H) or tails.png (ends on T) so the
- * animation and the "Heads/Tails wins" label always match.
+ * After the flip, the last animation frame stays on screen (no H/T medallion swap).
  */
 export function CoinFlipCoin({
   spinning = false,
@@ -67,7 +66,8 @@ export function CoinFlipCoin({
   const isFlipping = Boolean(spinning && flipStartedAt && elapsed < COIN_FLIP_DURATION_MS);
   const showEnd = Boolean(spinning && flipStartedAt && elapsed >= COIN_FLIP_DURATION_MS);
 
-  // Idle / waiting: crisp medallion (sprite frame 0 is empty).
+  // Waiting for a join: medallion only. Once a flip runs, stay on the sprite
+  // (including the final frame after it stops).
   if (!isFlipping && !showEnd) {
     return (
       <span
